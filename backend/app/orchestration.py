@@ -213,8 +213,16 @@ def build_graph(db, hcm, saver):
                 "confirmed_company": {}, "selected": {}, "confirmed_meaning": "", "company": ""}
 
     def guard_input(state):
-        reason = fast_rejection(state.get("latest_input", state["request"]))
-        return reject_scope(state, reason) if reason else {"phase": "classify"}
+        modules = state.get("modules") or []
+        def published():
+            # Read only when a calculation question needs the HCM's vocabulary; the classifier reuses the same list.
+            nonlocal modules
+            if not modules:
+                modules = module_list(hcm)
+            return [item for item in modules if item["id"] != "other"]
+        reason = fast_rejection(state.get("latest_input", state["request"]), published)
+        update = reject_scope(state, reason) if reason else {"phase": "classify"}
+        return {**update, "modules": modules} if modules else update
 
     def classify(state):
         modules = state.get("modules") or module_list(hcm)

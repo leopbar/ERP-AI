@@ -417,8 +417,9 @@ The catalog and executor include **Vacation**, **Timekeeping**, **Hiring**, **Pa
 
 ## 15. Scope and inputs unrelated to HCM
 
-- The graph checks scope **before** looking up the company or catalog.
-- A quick check blocks explicit instruction-override patterns and general calculations; semantic classification also distinguishes configuration, relevant clarification and off-topic questions.
+- The graph checks scope **before** looking up the company or its configuration.
+- A quick check blocks explicit instruction-override patterns and calculations that name nothing the HCM publishes; semantic classification also distinguishes configuration, relevant clarification and off-topic questions.
+- The quick check has no HR word list of its own: a subject counts when it matches the label, description or parameters of a module the HCM publishes. That module list is read only when a calculation question mentions something besides numbers, and the classifier reuses it.
 - The **latest message** is evaluated, even when the earlier history is legitimate.
 - Out-of-scope inputs get their own notice; they do not enter Unhandled and do not become solution memory.
 - The user can rephrase the request in the same case; the old text stays only in the history, without contaminating the new request.

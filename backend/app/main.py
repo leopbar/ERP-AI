@@ -145,7 +145,11 @@ def cases(db: Session = Depends(get_db), user=Depends(require_user)):
 
 @app.post("/api/cases", status_code=201)
 def create(payload: NewCase, db: Session = Depends(get_db), user=Depends(require_user)):
-    row = Case(request=payload.request.strip(), effective_from=payload.effective_from.isoformat(), company_code=payload.company_code.strip())
+    # The minimum applies to the text that is stored, so a request of blanks never becomes an empty case.
+    request = payload.request.strip()
+    if len(request) < 10:
+        raise HTTPException(422, "Descreva a necessidade com ao menos 10 caracteres.")
+    row = Case(request=request, effective_from=payload.effective_from.isoformat(), company_code=payload.company_code.strip())
     event(row, "opened", user)
     db.add(row); save(db)
     return output(row)

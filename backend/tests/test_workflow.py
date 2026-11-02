@@ -222,6 +222,15 @@ def test_auth_and_origin(setup):
     client.cookies.clear()
     assert client.get("/api/cases").status_code == 401
 
+def test_blank_request_is_refused_when_the_case_is_opened(setup):
+    client, _, _ = setup
+    for request in (" " * 10, "\n\t" * 8, "   férias   "):
+        response = client.post("/api/cases", json={"request": request, "effective_from": "2026-10-31"})
+        assert response.status_code == 422 and response.json()["detail"] == "Descreva a necessidade com ao menos 10 caracteres."
+    assert client.get("/api/cases").json() == []
+    response = client.post("/api/cases", json={"request": "   Permitir três parcelas na ABC   ", "effective_from": "2026-10-31"})
+    assert response.status_code == 201 and response.json()["request"] == "Permitir três parcelas na ABC"
+
 def test_official_dependency_and_production_change(setup):
     client, fake, _ = setup
     row = opened(client)
