@@ -273,3 +273,4 @@ def obsolete(case_id: int, payload: Action, db: Session = Depends(get_db), user=
 
 from app import execution_api as _execution_api  # register routes without shadowing FastAPI app
 from app import orchestration_api as _orchestration_api
+from app import insights_api as _insights_api

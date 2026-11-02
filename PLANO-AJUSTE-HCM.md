@@ -147,6 +147,12 @@ Arquivos: `backend/app/orchestration.py`, `orchestration_api.py`, `provider.py`,
 
 ## Fase 4 · Aprendizado e observabilidade
 
+**Estado em 01/11/2026: implementada.** `knowledge.py` ganhou radicalização leve em português, experiência anonimizada de outras empresas (mesmo módulo e contrato, nomes de empresa e grupos redigidos) e lições como contraexemplos; as duas fontes extras têm chaves em Conhecimento (`/api/knowledge/settings`, tabela `settings`). Lições (`lessons`, migração `0004_learning`) são gravadas em quatro momentos: interpretações recusadas com comentário, rejeições do validador durante o reparo automático, planos encaminhados por validação ou pendências e conclusões do consultor; o intérprete as recebe em `lessons` e o planejador como fontes. `insights_api.py` expõe `/api/metrics` (por modelo e papel: chamadas, reparos, tokens, duração, custo; por módulo: funil até validado; custo por caso validado) e `/api/unhandled/capabilities` (lacunas agrupadas, JSON ou CSV). `scripts/evaluate.py` executa os 19 cenários `kind=parameter` de `evaluation/scenarios.json`, agora com `setup` e `expect` estruturados, inclusive três cenários de configurações nomeadas, sobre estado sintético, e grava `artifacts/evaluation-<data>.json`. Suíte: 81 testes.
+
+Resultado da primeira rodada com Luna (01/11/2026): 17 de 19. As duas falhas (F05, F18) eram dependências não cascateadas ao desabilitar; duas correções fecharam ambas: uma frase no prompt do planejador sobre alterações dependentes (`hcm-consultant-5`) e as regras reais do catálogo no estado sintético, que estava com `rules` vazio. O juiz passou a comparar o payload final com a regra base do escopo, porque o modelo às vezes reenumera valores herdados ao criar regra nova de grupo ou nomeada, o que não é alteração. Rodada final: 19 de 19, custo estimado abaixo de um centavo de dólar. Um único modelo e uma rodada não comprovam confiabilidade: repetir amostras e comparar modelos continua necessário.
+
+Diferenças em relação ao previsto: embeddings não entraram, a radicalização resolveu o caso medido; a recuperação cruzada e as lições ficam ligadas por padrão e podem ser desligadas; o harness usa o HCM falso da suíte como estado sintético e validador, não o HCM real, por isso é barato e não altera nada.
+
 Arquivos: `knowledge.py`, `orchestration.py`, novo `metrics_api.py`, `evaluation/`.
 
 4.1 **Recuperação**
@@ -166,6 +172,8 @@ Arquivos: `knowledge.py`, `orchestration.py`, novo `metrics_api.py`, `evaluation
 - `scripts/evaluate.py`: roda `evaluation/scenarios.json` contra `FakeHCM` (estado inicial do cenário) com o modelo real opcional, registra acerto completo, alterações indevidas, perguntas, tokens e custo em `artifacts/evaluation-<data>.json`. Comparação A/B com e sem memória, como o README de `evaluation/` já descreve. Adicionar cenários de nomeadas, atribuições, sobreposição de grupos e módulos novos.
 
 ## Fase 5 · Transição e desligamento do v1
+
+**Estado em 01/11/2026: implementada.** `scripts/live_named_config.py` exercita o caminho de configuração nomeada com atribuição no HCM real e reverte. A interface avisa em atendimentos analisados antes do contrato atual (sem `contract_hash`). No HCM, as rotas `/api/integration/v1` foram retiradas: `main.py` só inclui a rota v2; `integration_api.py`, `integration_execution.py` e `integration_hr.py` permanecem como blocos de construção do v2 (autenticação, busca de empresas, hash, sondas, relatório dos módulos). Os testes do v1 foram removidos e seus comportamentos portados para `test_integration_v2.py`; as fixtures `integration` e `executor` vivem em `conftest.py`. Suíte do HCM: 92 testes.
 
 - Script `scripts/live_named_config.py --execute`: cria nomeada reversível, atribui a um grupo, verifica `effective` e sondas, reverte, confere baseline. Artefato em `artifacts/`.
 - Marcar atendimentos abertos sem `contract_hash` como "analisar novamente" na interface.

@@ -29,6 +29,29 @@ class Case(Base):
     __mapper_args__ = {"version_id_col": revision}
 
 
+class Setting(Base):
+    """Small key/value store for operator preferences, such as the knowledge switches."""
+    __tablename__ = "settings"
+    key: Mapped[str] = mapped_column(String(60), primary_key=True)
+    value: Mapped[dict] = mapped_column(JSON, default=dict)
+    updated_at: Mapped[str] = mapped_column(String(40), default=now)
+
+
+class Lesson(Base):
+    """Counterexamples harvested from the flow: rejected interpretations, validator rejections and
+    consultant resolutions. Text is redacted of company and group names before it is stored."""
+    __tablename__ = "lessons"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    case_id: Mapped[int] = mapped_column(Integer, index=True)
+    company_code: Mapped[str] = mapped_column(String(20), default="")
+    module: Mapped[str] = mapped_column(String(40), index=True)
+    contract_hash: Mapped[str] = mapped_column(String(64), default="")
+    kind: Mapped[str] = mapped_column(String(40))
+    text: Mapped[str] = mapped_column(Text)
+    active: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[str] = mapped_column(String(40), default=now)
+
+
 class InterpretationMemory(Base):
     __tablename__ = "interpretation_memories"
     id: Mapped[int] = mapped_column(primary_key=True)

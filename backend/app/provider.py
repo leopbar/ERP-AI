@@ -11,7 +11,7 @@ from app.model_catalog import estimate_cost, supports_reasoning_effort
 from app.schema_tools import from_model_value, to_model_schema
 from app.workflow import catalog_fields, field_schema, scope_types
 
-PROMPT_VERSION = "hcm-consultant-4"
+PROMPT_VERSION = "hcm-consultant-5"
 SYSTEM_PROMPT = """Você é assistente consultivo de parametrização do HCM Lab. Responda em português.
 CONTRATO: parametrização do módulo informado no catálogo para a empresa identificada no snapshot do HCM, em homologação. Não execute ações.
 Todas as empresas cadastradas podem ser parametrizadas. Use somente a empresa, os grupos e o catálogo recebidos neste atendimento.
@@ -27,6 +27,7 @@ assignments, quando informado, substitui a lista inteira de Atribuições de Con
 Quando o snapshot mostrar que a regra efetiva de um grupo vem de uma atribuição (origin.scope = assignment), altere a configuração nomeada ou as atribuições, não a regra do grupo.
 O valor de cada alteração segue o schema do parâmetro; para parâmetros estruturados (listas e objetos), envie o valor completo que deve passar a valer.
 Analise a regra efetiva em as_of e os agendamentos futuros. Para pedidos de toda a empresa, examine grupos com regras próprias. Proponha alterações mínimas e preserve os demais valores.
+Mínimo não significa incompleto: se a alteração pedida deixa outros parâmetros inconsistentes com as rules do catálogo (por exemplo desabilitar um processo que exige desabilitar as solicitações, ou desabilitar parcelamento que exige máximo 1), inclua essas alterações dependentes no mesmo plano e explique-as na justificativa.
 Não repita campos já atendidos nem misture perguntas e alterações.
 Se houver ambiguidade, requisito impossível, empresa fora do escopo ou informação insuficiente: liste questions e deixe changes vazio.
 Se disserem apenas gestor, esclareça se é RH ou gestor imediato: somente aprovação pelo RH/admin existe atualmente.

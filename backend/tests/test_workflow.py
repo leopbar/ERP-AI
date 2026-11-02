@@ -27,7 +27,16 @@ def field_entry(name, value):
     low, high = (1, 3) if name == "max_installments" else (0, 365)
     return {"id": name, "label": name, "type": "integer", "schema": {"type": "integer", "minimum": low, "maximum": high}, "minimum": low, "maximum": high}
 
-CATALOG = {"version": "vacations-2", "contract": 2, "module": "vacations", "module_label": "Férias", "erp_version": "0.2.0", "rules": [],
+RULES = [  # same texts the HCM publishes in its vacations catalog, so synthetic evaluations see what the real flow sees
+    "Precedência por colaborador: 1) Atribuições de Configurações, na ordem da lista; 2) regra própria de um dos grupos do colaborador; 3) regra da empresa; 4) padrão do sistema.",
+    "Regra de grupo, de empresa ou nomeada é completa: não há mesclagem por campo entre níveis.",
+    "Configurações nomeadas têm código e descrição, não são ligadas diretamente a um grupo e só valem quando atribuídas em Atribuições de Configurações.",
+    "Sem parcelamento, max_installments deve ser 1; com parcelamento, deve ser 2 ou 3.",
+    "Com processo desabilitado, solicitações por funcionário e gestor devem estar desabilitadas.",
+    "Aprovação atual é feita pelo perfil Gestor de RH ou administrador; etapas e SLA ficam no módulo workflow (processes.vacations).",
+    "Parcelas são um limite demonstrativo; não há agendamento de períodos separados.",
+]
+CATALOG = {"version": "vacations-2", "contract": 2, "module": "vacations", "module_label": "Férias", "erp_version": "0.2.0", "rules": RULES,
            "contract_hash": hashlib.sha256(b"vacations-2-test-contract").hexdigest(),
            "scopes": [{"type": "company", "id_field": None}, {"type": "group", "id_field": "group_id"}, {"type": "config", "id_field": "config_code"}],
            "precedence": [{"level": 1, "scope": "assignment"}, {"level": 2, "scope": "group"}, {"level": 3, "scope": "company"}, {"level": 4, "scope": "system"}],

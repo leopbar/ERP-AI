@@ -207,9 +207,10 @@ def test_arbitrary_company_is_used_through_plan_execution_approval_and_rollback(
             config["scope_key"] = "company:7:default"
     baseline = copy.deepcopy(fake.data)
     with factory() as db:
-        db.add(Case(request="parcelas férias aprovação", effective_from="2026-10-31", company_code="EMP001", catalog_version=CATALOG["version"], status="validated", proposal=PROPOSAL))
+        db.add(Case(request="parcelas férias aprovação", effective_from="2026-10-31", company_code="EMP001", module="vacations", catalog_version=CATALOG["version"], contract_hash=CATALOG["contract_hash"], status="validated", proposal=PROPOSAL))
         db.commit()
-        assert len(retrieve(db, "parcelas férias aprovação", CATALOG, company_code="234234SZDFA")) == 1
+        shared = retrieve(db, "parcelas férias aprovação", CATALOG, company_code="234234SZDFA")
+        assert len(shared) == 2 and shared[1]["id"].startswith("shared:") and "EMP001" not in json.dumps(shared[1])  # other company only as redacted analogy
     row = client.post("/api/cases", json={"request": "Configurar férias da Outra Ltda em três parcelas", "effective_from": "2026-10-31"}).json()
     assert row["company_code"] == ""
     row = post(client, row, "orchestrate")

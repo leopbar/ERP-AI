@@ -24,7 +24,11 @@ A lista de módulos e seus rótulos vêm do HCM (`GET /v2/modules`); o ERP guard
 
 ## Memória e aprendizagem
 
-Documentação e casos aprovados são recuperados por busca lexical, filtrados por empresa, versão e estado. Casos rejeitados, revertidos e obsoletos ficam fora da memória de soluções aprovadas. Alterações, correções e testes ficam no histórico. Isso melhora o conhecimento externo disponível à IA; não atualiza automaticamente seus pesos. Fine-tuning permanece uma decisão futura, dependente de dados revisados e avaliação.
+Documentação e casos aprovados são recuperados por busca lexical com radicalização leve em português, filtrados por empresa, módulo, versão e hash de contrato. Casos rejeitados, revertidos e obsoletos ficam fora da memória de soluções aprovadas. Duas fontes extras, ligadas por padrão e desligáveis em **Conhecimento**: experiência anonimizada de outras empresas no mesmo módulo e contrato, com nomes de empresa e grupos redigidos, usada como analogia e nunca como valor a copiar; e lições, os contraexemplos colhidos do próprio fluxo: interpretações recusadas com comentário, planos rejeitados pelo validador, planos com pendências e conclusões do consultor, também redigidos. O intérprete e o planejador recebem essas fontes marcadas como dados, não ordens. Isso melhora o conhecimento externo disponível à IA; não atualiza automaticamente seus pesos. Fine-tuning permanece uma decisão futura, dependente de dados revisados e avaliação.
+
+**Uso e resultados**, em Conhecimento, agrega todas as chamadas por modelo e papel (chamadas, reparos, tokens, duração média, custo estimado) e o funil por módulo (aceitas na primeira rodada, reanálises, encaminhamentos, aplicados, revertidos, validados), com custo por caso validado. **Capacidades ausentes**, em Não tratados, agrupa as lacunas que os agentes descreveram, com exportação CSV para o roadmap do HCM.
+
+Avaliação funcional: `scripts/evaluate.py --execute` roda os cenários `kind=parameter` de `evaluation/scenarios.json` com o modelo real sobre um estado sintético por cenário, julga a proposta contra o esperado e grava `artifacts/evaluation-<data>.json`. Rode dentro da imagem do backend, com o repositório montado, conforme `evaluation/README.md`. Não altera o HCM.
 
 ## Orquestração e memória de intenção
 
@@ -89,6 +93,8 @@ Teste integrado real opcional, que custa uma geração Luna e aplica uma altera�
 ```powershell
 python scripts/live_acceptance.py --execute
 ```
+
+Há também `scripts/live_named_config.py --execute`, que cria uma configuração nomeada temporária, atribui a um grupo, confere que a regra efetiva do grupo passa a vir da atribuição, confirma e reverte, sem chamada ao modelo. Atendimentos analisados antes do contrato atual exibem um aviso e precisam de nova análise antes de qualquer aceite.
 
 Esse teste registra um atendimento técnico, executa o fluxo pela API, confere os resultados e reverte exatamente as configurações. Não modifica o modelo salvo nem publica produção. Seu relatório fica em `artifacts/live-acceptance.json`; o caso revertido não vira experiência aprovada. Testes com mocks não comprovam qualidade do modelo; os cenários em `evaluation/` ainda exigem revisão do especialista e comparação funcional.
 

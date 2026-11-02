@@ -15,6 +15,7 @@ from app.main import app, editable, event, load, output, save
 from app.models import Case, InterpretationMemory
 from app.orchestration import EXAMPLES, GENERIC_EXAMPLE, module_label, build_graph, checkpointer, validate_models, record_memory
 from app.hcm import canonical_module
+from app.knowledge import record_lesson
 
 class Start(Action):
     primary_model: str = "gpt-6-luna"
@@ -85,6 +86,11 @@ def project(db, row, graph, config, user, error=None):
     old_count = len(previous.get("metrics", []))
     for metrics in data["metrics"][old_count:]:
         event(row, "agent_completed", user, role=metrics["role"], metrics=metrics)
+    for note in state.get("repair_notes", [])[len(previous.get("repair_notes", [])):]:
+        record_lesson(db, row, "validator_rejection", "Pedido: " + row.request[:300] + " | Rejeição do validador: " + str(note))
+    data["repair_notes"] = state.get("repair_notes", [])
+    if phase == "consultant" and previous.get("phase") != "consultant" and data["category"] in ("validation_failed", "plan_questions"):
+        record_lesson(db, row, data["category"], "Pedido: " + row.request[:300] + " | " + str(data["reason"]))
     if phase == "review" and previous.get("phase") != "review":
         event(row, "analyzed", user, sources=state.get("sources", []), proposal=row.proposal, snapshot=row.snapshot)
     if phase == "consultant" and previous.get("phase") != "consultant":
@@ -180,6 +186,8 @@ def resume(case_id: int, payload: Continue, db: Session = Depends(get_db), user=
         value = {"choice": payload.choice, "comment": payload.comment.strip()}
         event(row, "interpretation_rejected" if payload.choice == "none" else "interpretation_confirmed", user,
               choice=payload.choice, attempt=row.workflow["attempt"], comment=payload.comment)
+        if payload.choice == "none" and payload.comment.strip():
+            record_lesson(db, row, "interpretation_rejected", "Interpretações recusadas para o pedido: " + row.request[:300] + " | Correção: " + payload.comment.strip())
     elif payload.action in ("expert", "close") and phase == "consultant":
         if len(payload.comment.strip()) < 10:
             raise HTTPException(422, "O consultor deve registrar sua interpretação ou conclusão com ao menos 10 caracteres.")
@@ -187,6 +195,7 @@ def resume(case_id: int, payload: Continue, db: Session = Depends(get_db), user=
             raise HTTPException(409, "Este módulo ainda não possui conector de configuração. Registre a conclusão e encerre o encaminhamento.")
         value = {"action": payload.action, "comment": payload.comment.strip()}
         event(row, "consultant_resolution", user, comment=payload.comment, decision=payload.action)
+        record_lesson(db, row, "consultant_resolution", "Pedido: " + row.request[:300] + " | Conclusão do consultor: " + payload.comment.strip())
     else:
         raise HTTPException(409, "Esta ação não corresponde à etapa atual. Atualize o atendimento.")
     return drive(db, row, user, hcm, Command(resume=value))

@@ -35,6 +35,35 @@ export function ConsultantQueue({open}:{open:(id:number)=>void}){
  return <><p className="eyebrow">PENDÊNCIAS DE PARAMETRIZAÇÃO</p><h1>Não tratados.</h1><p>Pedidos que a IA não concluiu. Abra um atendimento para consultar o motivo, revisar a regra e registrar a solução.</p>{error&&<p role="alert" className="error">{error}</p>}{items.length?items.map(i=><button className="case-row" key={i.id} onClick={()=>open(i.id)}><span className="case-number">#{i.id}</span><div><strong>{i.request}</strong><small>{i.company||'Empresa a identificar'} · {i.module||'Assunto em análise'} · {i.reason}</small></div><span>Abrir atendimento →</span></button>):<div className="empty">Nenhum atendimento não tratado.</div>}</>
 }
 
+export function KnowledgeSettings(){
+ const [values,setValues]=useState<Json|null>(null),[error,setError]=useState('');
+ useEffect(()=>{fetch('/api/knowledge/settings').then(r=>r.json()).then(setValues).catch(()=>setError('Não foi possível carregar as preferências.'))},[]);
+ async function toggle(key:string){if(!values)return;const next={...values,[key]:!values[key]};try{const r=await fetch('/api/knowledge/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(next)});if(!r.ok)throw new Error();setValues(await r.json())}catch{setError('Não foi possível salvar a preferência.')}}
+ if(!values)return null;
+ return <section className="card"><h2>Fontes de conhecimento</h2><p>Além do catálogo e dos casos validados desta empresa, os agentes podem consultar duas fontes extras. Nenhuma delas treina o modelo nem autoriza alterações.</p>{error&&<p className="error">{error}</p>}
+ <label><input type="checkbox" checked={!!values.cross_company} onChange={()=>toggle('cross_company')}/> Experiência anonimizada de outras empresas, no mesmo módulo e contrato, com nomes de empresa e grupos redigidos</label>
+ <label><input type="checkbox" checked={!!values.lessons} onChange={()=>toggle('lessons')}/> Lições de atendimentos anteriores: interpretações recusadas, planos rejeitados pelo validador e conclusões do consultor</label></section>
+}
+
+export function MetricsPanel(){
+ const [data,setData]=useState<Json|null>(null),[error,setError]=useState('');
+ useEffect(()=>{fetch('/api/metrics').then(async r=>{if(!r.ok)throw new Error();setData(await r.json())}).catch(()=>setError('Não foi possível carregar as métricas.'))},[]);
+ if(error)return <p className="error">{error}</p>;
+ if(!data)return null;
+ const usd=(v:number)=>'US$ '+(v||0).toFixed(4);
+ return <section className="card"><h2>Uso e resultados</h2><p className="caption">Agregado de todos os atendimentos registrados. Custo é estimativa pelo consumo reportado, não fatura.</p>
+ <div className="table-scroll"><table><thead><tr><th>Modelo</th><th>Papel</th><th>Chamadas</th><th>Reparos</th><th>Tokens</th><th>Duração média</th><th>Custo estimado</th></tr></thead><tbody>{(data.by_model||[]).map((m:Json)=><tr key={m.model+m.role}><td>{m.model}</td><td>{m.role}</td><td>{m.calls}</td><td>{m.repairs}</td><td>{m.prompt_tokens+m.completion_tokens}</td><td>{m.average_seconds}s</td><td>{usd(m.cost_usd)}</td></tr>)}</tbody></table></div>
+ <div className="table-scroll"><table><thead><tr><th>Módulo</th><th>Atendimentos</th><th>Aceitos na 1ª rodada</th><th>Reanálises</th><th>Ao consultor</th><th>Aplicados</th><th>Revertidos</th><th>Validados</th></tr></thead><tbody>{(data.by_module||[]).map((m:Json)=><tr key={m.module}><td>{m.module}</td><td>{m.cases}</td><td>{m.first_round_accepted}</td><td>{m.escalations}</td><td>{m.consultant}</td><td>{m.applied}</td><td>{m.reverted}</td><td>{m.validated}</td></tr>)}</tbody></table></div>
+ <p className="caption">Custo total estimado {usd(data.totals?.cost_usd)} · casos validados {data.totals?.validated} · custo por caso validado {data.totals?.cost_per_validated_case!=null?usd(data.totals.cost_per_validated_case):'—'}</p></section>
+}
+
+export function CapabilityGaps({open}:{open:(id:number)=>void}){
+ const [items,setItems]=useState<Json[]>([]);
+ useEffect(()=>{fetch('/api/unhandled/capabilities').then(r=>r.ok?r.json():[]).then(setItems).catch(()=>{})},[]);
+ if(!items.length)return null;
+ return <section className="card"><div className="section-heading"><h2>Capacidades ausentes no HCM</h2><a className="text-button" href="/api/unhandled/capabilities?format=csv">Exportar CSV</a></div><p className="caption">Lacunas descritas pelos agentes e confirmadas pelo encaminhamento, agrupadas por módulo e descrição. Insumo para o roadmap do HCM.</p><ul>{items.map((g:Json)=><li key={g.module+g.description}><strong>{g.module}</strong> · {g.description} · {g.count} atendimento(s){g.open>0&&` · ${g.open} em aberto`} {g.case_ids.map((id:number)=><button key={id} className="text-button" onClick={()=>open(id)}>#{id}</button>)}</li>)}</ul></section>
+}
+
 export function InterpretationMemories(){
  const [items,setItems]=useState<Json[]>([]),[error,setError]=useState('');
  const refresh=()=>fetch('/api/interpretation-memories').then(async r=>{if(!r.ok)throw new Error('Não foi possível carregar a memória.');setItems(await r.json())}).catch(e=>setError(e.message));
