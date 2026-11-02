@@ -1,0 +1,4386 @@
+{
+  "_note": "Exemplo real do contrato v2 do HCM Lab, capturado em homologacao local em 2026-11-01 para servir de fixture aos dois lados da integracao. Nao contem credenciais.",
+  "modules": {
+    "contract": 2,
+    "items": [
+      {
+        "id": "vacations",
+        "label": "Férias",
+        "scopes": [
+          "company",
+          "group",
+          "config"
+        ]
+      },
+      {
+        "id": "admission",
+        "label": "Admissão",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "timekeeping",
+        "label": "Controle de ponto",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "payroll",
+        "label": "Folha demonstrativa",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "benefits",
+        "label": "Benefícios",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "contracting",
+        "label": "Contratação",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "vacation_policy",
+        "label": "Férias / aviso e abono",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "payroll_setup",
+        "label": "Grupos de cálculo e folhas",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "config_assignments",
+        "label": "Atribuições de Configurações",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "termination",
+        "label": "Rescisão / Aviso prévio",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "transport",
+        "label": "Vale-transporte",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "work_schedule",
+        "label": "Jornada e escala",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "dependents",
+        "label": "Dependentes",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "personal_data",
+        "label": "Alteração de dados pessoais",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "leave",
+        "label": "Afastamento / Ausência",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "movement",
+        "label": "Movimentação",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "transfer",
+        "label": "Cessão / Busca de colaborador",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "requisition",
+        "label": "Requisição de pessoal",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "recess",
+        "label": "Recesso de estágio",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "value_entry",
+        "label": "Lançamento de valores",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "recruitment",
+        "label": "Recrutamento e seleção",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "workflow",
+        "label": "Fluxos de aprovação e SLA",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "process_fields",
+        "label": "Informações adicionais dos processos",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "assignments",
+        "label": "Atribuições de seleção",
+        "scopes": [
+          "company"
+        ]
+      }
+    ]
+  },
+  "vacations_catalog": {
+    "version": "vacations-2",
+    "contract": 2,
+    "erp_version": "0.2.0",
+    "module": "vacations",
+    "module_label": "Férias",
+    "fields": [
+      {
+        "id": "process_enabled",
+        "label": "Processo de férias habilitado",
+        "type": "boolean",
+        "schema": {
+          "type": "boolean"
+        },
+        "minimum": null,
+        "maximum": null
+      },
+      {
+        "id": "employee_request_enabled",
+        "label": "Solicitação pelo funcionário",
+        "type": "boolean",
+        "schema": {
+          "type": "boolean"
+        },
+        "minimum": null,
+        "maximum": null
+      },
+      {
+        "id": "manager_request_enabled",
+        "label": "Solicitação pelo Gestor de RH",
+        "type": "boolean",
+        "schema": {
+          "type": "boolean"
+        },
+        "minimum": null,
+        "maximum": null
+      },
+      {
+        "id": "manager_approval_required",
+        "label": "Aprovação pelo RH ou administrador obrigatória",
+        "type": "boolean",
+        "schema": {
+          "type": "boolean"
+        },
+        "minimum": null,
+        "maximum": null
+      },
+      {
+        "id": "simulation_enabled",
+        "label": "Simulação habilitada",
+        "type": "boolean",
+        "schema": {
+          "type": "boolean"
+        },
+        "minimum": null,
+        "maximum": null
+      },
+      {
+        "id": "installments_allowed",
+        "label": "Parcelamento habilitado",
+        "type": "boolean",
+        "schema": {
+          "type": "boolean"
+        },
+        "minimum": null,
+        "maximum": null
+      },
+      {
+        "id": "max_installments",
+        "label": "Máximo de parcelas",
+        "type": "integer",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "minimum": 1,
+        "maximum": 3
+      },
+      {
+        "id": "min_advance_days",
+        "label": "Antecedência mínima em dias",
+        "type": "integer",
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 365
+        },
+        "minimum": 0,
+        "maximum": 365
+      },
+      {
+        "id": "allow_13th_advance",
+        "label": "Adiantamento fictício do 13º permitido",
+        "type": "boolean",
+        "schema": {
+          "type": "boolean"
+        },
+        "minimum": null,
+        "maximum": null
+      },
+      {
+        "id": "show_balance_to_employee",
+        "label": "Exibição do saldo ao funcionário",
+        "type": "boolean",
+        "schema": {
+          "type": "boolean"
+        },
+        "minimum": null,
+        "maximum": null
+      }
+    ],
+    "scopes": [
+      {
+        "type": "company",
+        "label": "Regra geral da empresa",
+        "id_field": null
+      },
+      {
+        "type": "group",
+        "label": "Regra própria de um grupo de colaboradores",
+        "id_field": "group_id",
+        "source": "snapshot.groups"
+      },
+      {
+        "type": "config",
+        "label": "Configuração nomeada, atribuída a grupos em Atribuições de Configurações",
+        "id_field": "config_code",
+        "source": "snapshot.named_configurations",
+        "fields": [
+          {
+            "id": "config_code",
+            "label": "Código da configuração nomeada",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z0-9_-]{1,20}$"
+            }
+          },
+          {
+            "id": "name",
+            "label": "Descrição da configuração nomeada",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            }
+          },
+          {
+            "id": "simulation_text",
+            "label": "Texto exibido na simulação",
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 2000
+            }
+          }
+        ]
+      }
+    ],
+    "precedence": [
+      {
+        "level": 1,
+        "scope": "assignment",
+        "description": "Atribuições de Configurações (módulo config_assignments), na ordem da lista: a primeira linha cujo grupo inclui o colaborador vence."
+      },
+      {
+        "level": 2,
+        "scope": "group",
+        "description": "Regra própria do primeiro grupo do colaborador que tiver regra (grupo principal primeiro)."
+      },
+      {
+        "level": 3,
+        "scope": "company",
+        "description": "Regra geral da empresa."
+      },
+      {
+        "level": 4,
+        "scope": "system",
+        "description": "Padrão do sistema."
+      }
+    ],
+    "rules": [
+      "Precedência por colaborador: 1) Atribuições de Configurações, na ordem da lista; 2) regra própria de um dos grupos do colaborador; 3) regra da empresa; 4) padrão do sistema.",
+      "Um colaborador pode participar de vários grupos (principal e participações adicionais). Com atribuições, a primeira linha cujo grupo inclui o colaborador vence.",
+      "Regra de grupo, de empresa ou nomeada é completa: não há mesclagem por campo entre níveis.",
+      "Configurações nomeadas têm código e descrição, não são ligadas diretamente a um grupo e só valem quando atribuídas em Atribuições de Configurações.",
+      "Sem parcelamento, max_installments deve ser 1; com parcelamento, deve ser 2 ou 3.",
+      "Com processo desabilitado, solicitações por funcionário e gestor devem estar desabilitadas.",
+      "Aprovação atual é feita pelo perfil Gestor de RH ou administrador; etapas e SLA ficam no módulo workflow (processes.vacations).",
+      "Parcelas são um limite demonstrativo; não há agendamento de períodos separados.",
+      "A simulação operacional resolve a configuração na data atual, não na data inicial das férias.",
+      "Abono pecuniário, regras CLT de parcelamento, aviso, ciência e Guia Férias ficam no módulo vacation_policy."
+    ],
+    "related_modules": [
+      {
+        "id": "config_assignments",
+        "label": "Atribuições de Configurações",
+        "description": "Lista ordenada grupo → configuração nomeada para Férias e Férias - Simulação. Pode ser alterada no mesmo plano de Férias (campo assignments)."
+      },
+      {
+        "id": "vacation_policy",
+        "label": "Férias / aviso e abono",
+        "description": "Abono pecuniário, regras CLT de parcelamento, bloqueio antes de feriado/DSR, aviso, ciência, prazo mínimo de aprovação e Guia Férias."
+      },
+      {
+        "id": "workflow",
+        "label": "Fluxos de aprovação e SLA",
+        "description": "Etapas de aprovação, SLA e exceções por grupo do processo de férias (processes.vacations)."
+      }
+    ],
+    "available_modules": [
+      {
+        "id": "vacations",
+        "label": "Férias",
+        "scopes": [
+          "company",
+          "group",
+          "config"
+        ]
+      },
+      {
+        "id": "admission",
+        "label": "Admissão",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "timekeeping",
+        "label": "Controle de ponto",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "payroll",
+        "label": "Folha demonstrativa",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "benefits",
+        "label": "Benefícios",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "contracting",
+        "label": "Contratação",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "vacation_policy",
+        "label": "Férias / aviso e abono",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "payroll_setup",
+        "label": "Grupos de cálculo e folhas",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "config_assignments",
+        "label": "Atribuições de Configurações",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "termination",
+        "label": "Rescisão / Aviso prévio",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "transport",
+        "label": "Vale-transporte",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "work_schedule",
+        "label": "Jornada e escala",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "dependents",
+        "label": "Dependentes",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "personal_data",
+        "label": "Alteração de dados pessoais",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "leave",
+        "label": "Afastamento / Ausência",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "movement",
+        "label": "Movimentação",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "transfer",
+        "label": "Cessão / Busca de colaborador",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "requisition",
+        "label": "Requisição de pessoal",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "recess",
+        "label": "Recesso de estágio",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "value_entry",
+        "label": "Lançamento de valores",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "recruitment",
+        "label": "Recrutamento e seleção",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "workflow",
+        "label": "Fluxos de aprovação e SLA",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "process_fields",
+        "label": "Informações adicionais dos processos",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "assignments",
+        "label": "Atribuições de seleção",
+        "scopes": [
+          "company"
+        ]
+      }
+    ],
+    "capabilities": {
+      "apply_homologation": true,
+      "automatic_tests": true,
+      "rollback": true,
+      "production_write": false,
+      "named_configurations": true,
+      "assignments": true,
+      "contract_hash": true
+    },
+    "plan": {
+      "configurations": "Lista de regras completas; escopo pelo par group_id/config_code.",
+      "assignments": "Opcional: nova lista completa de Atribuições de Configurações (vacations e vacations_simulation).",
+      "approval_hash": "sha256 de {expected_fingerprint, configurations (objetos completos, inclusive campos nulos), assignments (ou null)} com chaves ordenadas."
+    },
+    "effective_basis": "snapshot.effective traz a regra resolvida para um colaborador que participa apenas do grupo indicado; overlap_count mostra quantos colaboradores do grupo também estão em outros grupos.",
+    "contract_hash": "b5a212d3c0d0ba1f25a7e1d5719288b765d1587ef2edbdb6d24ac3a64b38f0de"
+  },
+  "vacations_snapshot_EMP001": {
+    "contract": 2,
+    "company": {
+      "id": 3,
+      "code": "EMP001",
+      "name": "ABC Tecnologia"
+    },
+    "as_of": "2026-11-02",
+    "consulted_at": "2026-11-02T00:54:24.194598+00:00",
+    "catalog_version": "vacations-2",
+    "contract_hash": "b5a212d3c0d0ba1f25a7e1d5719288b765d1587ef2edbdb6d24ac3a64b38f0de",
+    "erp_version": "0.2.0",
+    "groups": [
+      {
+        "id": 7,
+        "name": "Administrativo",
+        "employee_count": 15,
+        "primary_count": 15,
+        "member_count": 15,
+        "overlap_count": 0
+      },
+      {
+        "id": 8,
+        "name": "Operacional",
+        "employee_count": 16,
+        "primary_count": 16,
+        "member_count": 16,
+        "overlap_count": 0
+      },
+      {
+        "id": 9,
+        "name": "Gestores",
+        "employee_count": 2,
+        "primary_count": 2,
+        "member_count": 2,
+        "overlap_count": 0
+      }
+    ],
+    "schedules": {
+      "homologation": [
+        {
+          "id": 43,
+          "scope_key": "company:3:config:CFG-GESTORES",
+          "company_id": 3,
+          "environment": "homologation",
+          "group_id": null,
+          "version": 1,
+          "effective_from": "2026-11-01",
+          "active": true,
+          "config_code": "CFG-GESTORES",
+          "name": "Férias de gestores",
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": true,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": true,
+          "max_installments": 3,
+          "min_advance_days": 30,
+          "allow_13th_advance": false,
+          "show_balance_to_employee": true
+        },
+        {
+          "id": 4,
+          "scope_key": "company:3:default",
+          "company_id": 3,
+          "environment": "homologation",
+          "group_id": null,
+          "version": 1,
+          "effective_from": "2026-10-31",
+          "active": true,
+          "config_code": null,
+          "name": null,
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": true,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": true,
+          "max_installments": 2,
+          "min_advance_days": 30,
+          "allow_13th_advance": false,
+          "show_balance_to_employee": true
+        },
+        {
+          "id": 9,
+          "scope_key": "company:3:default",
+          "company_id": 3,
+          "environment": "homologation",
+          "group_id": null,
+          "version": 2,
+          "effective_from": "2026-10-31",
+          "active": true,
+          "config_code": null,
+          "name": null,
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": true,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": true,
+          "max_installments": 2,
+          "min_advance_days": 45,
+          "allow_13th_advance": false,
+          "show_balance_to_employee": true
+        },
+        {
+          "id": 10,
+          "scope_key": "company:3:default",
+          "company_id": 3,
+          "environment": "homologation",
+          "group_id": null,
+          "version": 3,
+          "effective_from": "2026-10-31",
+          "active": true,
+          "config_code": null,
+          "name": null,
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": true,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": true,
+          "max_installments": 2,
+          "min_advance_days": 45,
+          "allow_13th_advance": false,
+          "show_balance_to_employee": true
+        },
+        {
+          "id": 12,
+          "scope_key": "company:3:default",
+          "company_id": 3,
+          "environment": "homologation",
+          "group_id": null,
+          "version": 4,
+          "effective_from": "2026-10-31",
+          "active": true,
+          "config_code": null,
+          "name": null,
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": true,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": true,
+          "max_installments": 2,
+          "min_advance_days": 15,
+          "allow_13th_advance": true,
+          "show_balance_to_employee": true
+        },
+        {
+          "id": 18,
+          "scope_key": "company:3:default",
+          "company_id": 3,
+          "environment": "homologation",
+          "group_id": null,
+          "version": 8,
+          "effective_from": "2026-10-31",
+          "active": true,
+          "config_code": null,
+          "name": null,
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": false,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": false,
+          "max_installments": 1,
+          "min_advance_days": 60,
+          "allow_13th_advance": true,
+          "show_balance_to_employee": true
+        },
+        {
+          "id": 19,
+          "scope_key": "company:3:default",
+          "company_id": 3,
+          "environment": "homologation",
+          "group_id": null,
+          "version": 9,
+          "effective_from": "2026-10-31",
+          "active": true,
+          "config_code": null,
+          "name": null,
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": true,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": true,
+          "max_installments": 3,
+          "min_advance_days": 15,
+          "allow_13th_advance": true,
+          "show_balance_to_employee": true
+        },
+        {
+          "id": 20,
+          "scope_key": "company:3:default",
+          "company_id": 3,
+          "environment": "homologation",
+          "group_id": null,
+          "version": 10,
+          "effective_from": "2026-10-31",
+          "active": true,
+          "config_code": null,
+          "name": null,
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": true,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": true,
+          "max_installments": 2,
+          "min_advance_days": 15,
+          "allow_13th_advance": true,
+          "show_balance_to_employee": true
+        },
+        {
+          "id": 24,
+          "scope_key": "company:3:default",
+          "company_id": 3,
+          "environment": "homologation",
+          "group_id": null,
+          "version": 12,
+          "effective_from": "2026-10-31",
+          "active": true,
+          "config_code": null,
+          "name": null,
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": true,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": true,
+          "max_installments": 3,
+          "min_advance_days": 60,
+          "allow_13th_advance": false,
+          "show_balance_to_employee": true
+        },
+        {
+          "id": 46,
+          "scope_key": "company:3:default",
+          "company_id": 3,
+          "environment": "homologation",
+          "group_id": null,
+          "version": 13,
+          "effective_from": "2026-11-01",
+          "active": true,
+          "config_code": null,
+          "name": null,
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": true,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": false,
+          "max_installments": 1,
+          "min_advance_days": 60,
+          "allow_13th_advance": false,
+          "show_balance_to_employee": true
+        },
+        {
+          "id": 47,
+          "scope_key": "company:3:default",
+          "company_id": 3,
+          "environment": "homologation",
+          "group_id": null,
+          "version": 14,
+          "effective_from": "2026-11-01",
+          "active": true,
+          "config_code": null,
+          "name": null,
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": true,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": true,
+          "max_installments": 3,
+          "min_advance_days": 60,
+          "allow_13th_advance": false,
+          "show_balance_to_employee": true
+        },
+        {
+          "id": 48,
+          "scope_key": "company:3:group:8",
+          "company_id": 3,
+          "environment": "homologation",
+          "group_id": 8,
+          "version": 1,
+          "effective_from": "2026-11-01",
+          "active": true,
+          "config_code": null,
+          "name": null,
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": true,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": false,
+          "max_installments": 1,
+          "min_advance_days": 60,
+          "allow_13th_advance": false,
+          "show_balance_to_employee": true
+        },
+        {
+          "id": 6,
+          "scope_key": "system",
+          "company_id": null,
+          "environment": "homologation",
+          "group_id": null,
+          "version": 1,
+          "effective_from": "2026-10-31",
+          "active": true,
+          "config_code": null,
+          "name": null,
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": true,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": true,
+          "max_installments": 3,
+          "min_advance_days": 15,
+          "allow_13th_advance": false,
+          "show_balance_to_employee": true
+        }
+      ],
+      "production": [
+        {
+          "id": 44,
+          "scope_key": "company:3:config:CFG-GESTORES",
+          "company_id": 3,
+          "environment": "production",
+          "group_id": null,
+          "version": 1,
+          "effective_from": "2026-11-01",
+          "active": true,
+          "config_code": "CFG-GESTORES",
+          "name": "Férias de gestores",
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": true,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": true,
+          "max_installments": 3,
+          "min_advance_days": 30,
+          "allow_13th_advance": false,
+          "show_balance_to_employee": true
+        },
+        {
+          "id": 2,
+          "scope_key": "company:3:default",
+          "company_id": 3,
+          "environment": "production",
+          "group_id": null,
+          "version": 1,
+          "effective_from": "2026-10-31",
+          "active": true,
+          "config_code": null,
+          "name": null,
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": true,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": true,
+          "max_installments": 2,
+          "min_advance_days": 30,
+          "allow_13th_advance": false,
+          "show_balance_to_employee": true
+        },
+        {
+          "id": 11,
+          "scope_key": "company:3:default",
+          "company_id": 3,
+          "environment": "production",
+          "group_id": null,
+          "version": 2,
+          "effective_from": "2026-10-31",
+          "active": true,
+          "config_code": null,
+          "name": null,
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": true,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": true,
+          "max_installments": 2,
+          "min_advance_days": 45,
+          "allow_13th_advance": false,
+          "show_balance_to_employee": true
+        },
+        {
+          "id": 21,
+          "scope_key": "company:3:default",
+          "company_id": 3,
+          "environment": "production",
+          "group_id": null,
+          "version": 3,
+          "effective_from": "2026-10-31",
+          "active": true,
+          "config_code": null,
+          "name": null,
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": true,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": true,
+          "max_installments": 2,
+          "min_advance_days": 15,
+          "allow_13th_advance": true,
+          "show_balance_to_employee": true
+        },
+        {
+          "id": 45,
+          "scope_key": "company:3:default",
+          "company_id": 3,
+          "environment": "production",
+          "group_id": null,
+          "version": 4,
+          "effective_from": "2026-10-31",
+          "active": true,
+          "config_code": null,
+          "name": null,
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": true,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": true,
+          "max_installments": 3,
+          "min_advance_days": 60,
+          "allow_13th_advance": false,
+          "show_balance_to_employee": true
+        },
+        {
+          "id": 49,
+          "scope_key": "company:3:default",
+          "company_id": 3,
+          "environment": "production",
+          "group_id": null,
+          "version": 5,
+          "effective_from": "2026-11-01",
+          "active": true,
+          "config_code": null,
+          "name": null,
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": true,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": true,
+          "max_installments": 3,
+          "min_advance_days": 60,
+          "allow_13th_advance": false,
+          "show_balance_to_employee": true
+        },
+        {
+          "id": 50,
+          "scope_key": "company:3:group:8",
+          "company_id": 3,
+          "environment": "production",
+          "group_id": 8,
+          "version": 1,
+          "effective_from": "2026-11-01",
+          "active": true,
+          "config_code": null,
+          "name": null,
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": true,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": false,
+          "max_installments": 1,
+          "min_advance_days": 60,
+          "allow_13th_advance": false,
+          "show_balance_to_employee": true
+        },
+        {
+          "id": 1,
+          "scope_key": "system",
+          "company_id": null,
+          "environment": "production",
+          "group_id": null,
+          "version": 1,
+          "effective_from": "2026-10-31",
+          "active": true,
+          "config_code": null,
+          "name": null,
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": true,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": true,
+          "max_installments": 3,
+          "min_advance_days": 15,
+          "allow_13th_advance": false,
+          "show_balance_to_employee": true
+        }
+      ]
+    },
+    "named_configurations": {
+      "homologation": [
+        {
+          "id": 43,
+          "scope_key": "company:3:config:CFG-GESTORES",
+          "company_id": 3,
+          "environment": "homologation",
+          "group_id": null,
+          "version": 1,
+          "effective_from": "2026-11-01",
+          "active": true,
+          "config_code": "CFG-GESTORES",
+          "name": "Férias de gestores",
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": true,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": true,
+          "max_installments": 3,
+          "min_advance_days": 30,
+          "allow_13th_advance": false,
+          "show_balance_to_employee": true
+        }
+      ],
+      "production": [
+        {
+          "id": 44,
+          "scope_key": "company:3:config:CFG-GESTORES",
+          "company_id": 3,
+          "environment": "production",
+          "group_id": null,
+          "version": 1,
+          "effective_from": "2026-11-01",
+          "active": true,
+          "config_code": "CFG-GESTORES",
+          "name": "Férias de gestores",
+          "simulation_text": null,
+          "process_enabled": true,
+          "employee_request_enabled": true,
+          "manager_request_enabled": true,
+          "manager_approval_required": true,
+          "simulation_enabled": true,
+          "installments_allowed": true,
+          "max_installments": 3,
+          "min_advance_days": 30,
+          "allow_13th_advance": false,
+          "show_balance_to_employee": true
+        }
+      ]
+    },
+    "assignments": {
+      "homologation": {
+        "vacations": [
+          {
+            "group": "Gestores",
+            "config": "CFG-GESTORES"
+          }
+        ],
+        "vacations_simulation": [],
+        "version": 1,
+        "effective_from": "2026-11-01"
+      },
+      "production": {
+        "vacations": [
+          {
+            "group": "Gestores",
+            "config": "CFG-GESTORES"
+          }
+        ],
+        "vacations_simulation": [],
+        "version": 1,
+        "effective_from": "2026-11-01"
+      }
+    },
+    "effective": {
+      "homologation": [
+        {
+          "group_id": null,
+          "group_name": "Regra geral",
+          "configuration": {
+            "id": 47,
+            "scope_key": "company:3:default",
+            "company_id": 3,
+            "environment": "homologation",
+            "group_id": null,
+            "version": 14,
+            "effective_from": "2026-11-01",
+            "active": true,
+            "config_code": null,
+            "name": null,
+            "simulation_text": null,
+            "process_enabled": true,
+            "employee_request_enabled": true,
+            "manager_request_enabled": true,
+            "manager_approval_required": true,
+            "simulation_enabled": true,
+            "installments_allowed": true,
+            "max_installments": 3,
+            "min_advance_days": 60,
+            "allow_13th_advance": false,
+            "show_balance_to_employee": true
+          },
+          "origin": {
+            "scope": "company",
+            "label": "Empresa ABC Tecnologia",
+            "scope_key": "company:3:default",
+            "version": 14
+          },
+          "why": "A configuração da empresa ABC Tecnologia prevalece sobre o padrão do sistema.",
+          "overlap_count": 0
+        },
+        {
+          "group_id": 7,
+          "group_name": "Administrativo",
+          "configuration": {
+            "id": 47,
+            "scope_key": "company:3:default",
+            "company_id": 3,
+            "environment": "homologation",
+            "group_id": null,
+            "version": 14,
+            "effective_from": "2026-11-01",
+            "active": true,
+            "config_code": null,
+            "name": null,
+            "simulation_text": null,
+            "process_enabled": true,
+            "employee_request_enabled": true,
+            "manager_request_enabled": true,
+            "manager_approval_required": true,
+            "simulation_enabled": true,
+            "installments_allowed": true,
+            "max_installments": 3,
+            "min_advance_days": 60,
+            "allow_13th_advance": false,
+            "show_balance_to_employee": true
+          },
+          "origin": {
+            "scope": "company",
+            "label": "Empresa ABC Tecnologia",
+            "scope_key": "company:3:default",
+            "version": 14
+          },
+          "why": "A configuração da empresa ABC Tecnologia prevalece sobre o padrão do sistema.",
+          "overlap_count": 0
+        },
+        {
+          "group_id": 8,
+          "group_name": "Operacional",
+          "configuration": {
+            "id": 48,
+            "scope_key": "company:3:group:8",
+            "company_id": 3,
+            "environment": "homologation",
+            "group_id": 8,
+            "version": 1,
+            "effective_from": "2026-11-01",
+            "active": true,
+            "config_code": null,
+            "name": null,
+            "simulation_text": null,
+            "process_enabled": true,
+            "employee_request_enabled": true,
+            "manager_request_enabled": true,
+            "manager_approval_required": true,
+            "simulation_enabled": true,
+            "installments_allowed": false,
+            "max_installments": 1,
+            "min_advance_days": 60,
+            "allow_13th_advance": false,
+            "show_balance_to_employee": true
+          },
+          "origin": {
+            "scope": "group",
+            "label": "Grupo Operacional",
+            "scope_key": "company:3:group:8",
+            "version": 1
+          },
+          "why": "Para este funcionário, a regra efetiva vem do grupo Operacional, que prevalece sobre a configuração geral da empresa.",
+          "overlap_count": 0
+        },
+        {
+          "group_id": 9,
+          "group_name": "Gestores",
+          "configuration": {
+            "id": 43,
+            "scope_key": "company:3:config:CFG-GESTORES",
+            "company_id": 3,
+            "environment": "homologation",
+            "group_id": null,
+            "version": 1,
+            "effective_from": "2026-11-01",
+            "active": true,
+            "config_code": "CFG-GESTORES",
+            "name": "Férias de gestores",
+            "simulation_text": null,
+            "process_enabled": true,
+            "employee_request_enabled": true,
+            "manager_request_enabled": true,
+            "manager_approval_required": true,
+            "simulation_enabled": true,
+            "installments_allowed": true,
+            "max_installments": 3,
+            "min_advance_days": 30,
+            "allow_13th_advance": false,
+            "show_balance_to_employee": true
+          },
+          "origin": {
+            "scope": "assignment",
+            "label": "Configuração CFG-GESTORES - Férias de gestores",
+            "scope_key": "company:3:config:CFG-GESTORES",
+            "version": 1,
+            "group": "Gestores",
+            "priority": 1,
+            "process": "Férias"
+          },
+          "why": "O colaborador participa do grupo Gestores, atribuído à configuração CFG-GESTORES na posição 1 das Atribuições de Configurações (Férias). A ordenação define a prioridade quando o colaborador faz parte de mais de um grupo.",
+          "overlap_count": 0
+        }
+      ],
+      "production": [
+        {
+          "group_id": null,
+          "group_name": "Regra geral",
+          "configuration": {
+            "id": 49,
+            "scope_key": "company:3:default",
+            "company_id": 3,
+            "environment": "production",
+            "group_id": null,
+            "version": 5,
+            "effective_from": "2026-11-01",
+            "active": true,
+            "config_code": null,
+            "name": null,
+            "simulation_text": null,
+            "process_enabled": true,
+            "employee_request_enabled": true,
+            "manager_request_enabled": true,
+            "manager_approval_required": true,
+            "simulation_enabled": true,
+            "installments_allowed": true,
+            "max_installments": 3,
+            "min_advance_days": 60,
+            "allow_13th_advance": false,
+            "show_balance_to_employee": true
+          },
+          "origin": {
+            "scope": "company",
+            "label": "Empresa ABC Tecnologia",
+            "scope_key": "company:3:default",
+            "version": 5
+          },
+          "why": "A configuração da empresa ABC Tecnologia prevalece sobre o padrão do sistema.",
+          "overlap_count": 0
+        },
+        {
+          "group_id": 7,
+          "group_name": "Administrativo",
+          "configuration": {
+            "id": 49,
+            "scope_key": "company:3:default",
+            "company_id": 3,
+            "environment": "production",
+            "group_id": null,
+            "version": 5,
+            "effective_from": "2026-11-01",
+            "active": true,
+            "config_code": null,
+            "name": null,
+            "simulation_text": null,
+            "process_enabled": true,
+            "employee_request_enabled": true,
+            "manager_request_enabled": true,
+            "manager_approval_required": true,
+            "simulation_enabled": true,
+            "installments_allowed": true,
+            "max_installments": 3,
+            "min_advance_days": 60,
+            "allow_13th_advance": false,
+            "show_balance_to_employee": true
+          },
+          "origin": {
+            "scope": "company",
+            "label": "Empresa ABC Tecnologia",
+            "scope_key": "company:3:default",
+            "version": 5
+          },
+          "why": "A configuração da empresa ABC Tecnologia prevalece sobre o padrão do sistema.",
+          "overlap_count": 0
+        },
+        {
+          "group_id": 8,
+          "group_name": "Operacional",
+          "configuration": {
+            "id": 50,
+            "scope_key": "company:3:group:8",
+            "company_id": 3,
+            "environment": "production",
+            "group_id": 8,
+            "version": 1,
+            "effective_from": "2026-11-01",
+            "active": true,
+            "config_code": null,
+            "name": null,
+            "simulation_text": null,
+            "process_enabled": true,
+            "employee_request_enabled": true,
+            "manager_request_enabled": true,
+            "manager_approval_required": true,
+            "simulation_enabled": true,
+            "installments_allowed": false,
+            "max_installments": 1,
+            "min_advance_days": 60,
+            "allow_13th_advance": false,
+            "show_balance_to_employee": true
+          },
+          "origin": {
+            "scope": "group",
+            "label": "Grupo Operacional",
+            "scope_key": "company:3:group:8",
+            "version": 1
+          },
+          "why": "Para este funcionário, a regra efetiva vem do grupo Operacional, que prevalece sobre a configuração geral da empresa.",
+          "overlap_count": 0
+        },
+        {
+          "group_id": 9,
+          "group_name": "Gestores",
+          "configuration": {
+            "id": 44,
+            "scope_key": "company:3:config:CFG-GESTORES",
+            "company_id": 3,
+            "environment": "production",
+            "group_id": null,
+            "version": 1,
+            "effective_from": "2026-11-01",
+            "active": true,
+            "config_code": "CFG-GESTORES",
+            "name": "Férias de gestores",
+            "simulation_text": null,
+            "process_enabled": true,
+            "employee_request_enabled": true,
+            "manager_request_enabled": true,
+            "manager_approval_required": true,
+            "simulation_enabled": true,
+            "installments_allowed": true,
+            "max_installments": 3,
+            "min_advance_days": 30,
+            "allow_13th_advance": false,
+            "show_balance_to_employee": true
+          },
+          "origin": {
+            "scope": "assignment",
+            "label": "Configuração CFG-GESTORES - Férias de gestores",
+            "scope_key": "company:3:config:CFG-GESTORES",
+            "version": 1,
+            "group": "Gestores",
+            "priority": 1,
+            "process": "Férias"
+          },
+          "why": "O colaborador participa do grupo Gestores, atribuído à configuração CFG-GESTORES na posição 1 das Atribuições de Configurações (Férias). A ordenação define a prioridade quando o colaborador faz parte de mais de um grupo.",
+          "overlap_count": 0
+        }
+      ]
+    },
+    "effective_basis": "snapshot.effective traz a regra resolvida para um colaborador que participa apenas do grupo indicado; overlap_count mostra quantos colaboradores do grupo também estão em outros grupos.",
+    "fingerprint": "de3b8ecb9949d74f8f787fb24cb29623606cc92a73ec6975a39e146d67d5a3db"
+  },
+  "workflow_catalog": {
+    "version": "workflow-2",
+    "contract": 2,
+    "erp_version": "0.2.0",
+    "module": "workflow",
+    "module_label": "Fluxos de aprovação e SLA",
+    "fields": [
+      {
+        "id": "sla_enabled",
+        "label": "Utiliza prazo de atendimento (SLA)",
+        "type": "boolean",
+        "schema": {
+          "type": "boolean"
+        }
+      },
+      {
+        "id": "business_start",
+        "label": "Início do expediente do SLA",
+        "type": "string",
+        "schema": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        }
+      },
+      {
+        "id": "business_end",
+        "label": "Fim do expediente do SLA",
+        "type": "string",
+        "schema": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        }
+      },
+      {
+        "id": "business_days",
+        "label": "Dias úteis do SLA",
+        "type": "array",
+        "schema": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 6
+          }
+        }
+      },
+      {
+        "id": "skip_step_when_requester_is_approver",
+        "label": "Aprovar automaticamente a etapa quando o solicitante é o aprovador",
+        "type": "boolean",
+        "schema": {
+          "type": "boolean"
+        }
+      },
+      {
+        "id": "processes",
+        "label": "processes",
+        "type": "object",
+        "schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "vacations",
+            "benefits",
+            "dependents",
+            "personal_data",
+            "leave",
+            "movement",
+            "transfer",
+            "requisition",
+            "termination",
+            "recess",
+            "transport",
+            "value_entry"
+          ],
+          "properties": {
+            "vacations": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "steps",
+                "group_overrides"
+              ],
+              "properties": {
+                "steps": {
+                  "type": "array",
+                  "maxItems": 5,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "approver": {
+                        "type": "string",
+                        "enum": [
+                          "direct_manager",
+                          "hr",
+                          "system_admin",
+                          "target_hr"
+                        ]
+                      },
+                      "sla_hours": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 720
+                      },
+                      "finish": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "approver",
+                      "sla_hours"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "group_overrides": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "maxItems": 5,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "approver": {
+                          "type": "string",
+                          "enum": [
+                            "direct_manager",
+                            "hr",
+                            "system_admin",
+                            "target_hr"
+                          ]
+                        },
+                        "sla_hours": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 720
+                        },
+                        "finish": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "approver",
+                        "sla_hours"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                }
+              }
+            },
+            "benefits": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "steps",
+                "group_overrides"
+              ],
+              "properties": {
+                "steps": {
+                  "type": "array",
+                  "maxItems": 5,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "approver": {
+                        "type": "string",
+                        "enum": [
+                          "direct_manager",
+                          "hr",
+                          "system_admin",
+                          "target_hr"
+                        ]
+                      },
+                      "sla_hours": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 720
+                      },
+                      "finish": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "approver",
+                      "sla_hours"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "group_overrides": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "maxItems": 5,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "approver": {
+                          "type": "string",
+                          "enum": [
+                            "direct_manager",
+                            "hr",
+                            "system_admin",
+                            "target_hr"
+                          ]
+                        },
+                        "sla_hours": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 720
+                        },
+                        "finish": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "approver",
+                        "sla_hours"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                }
+              }
+            },
+            "dependents": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "steps",
+                "group_overrides"
+              ],
+              "properties": {
+                "steps": {
+                  "type": "array",
+                  "maxItems": 5,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "approver": {
+                        "type": "string",
+                        "enum": [
+                          "direct_manager",
+                          "hr",
+                          "system_admin",
+                          "target_hr"
+                        ]
+                      },
+                      "sla_hours": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 720
+                      },
+                      "finish": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "approver",
+                      "sla_hours"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "group_overrides": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "maxItems": 5,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "approver": {
+                          "type": "string",
+                          "enum": [
+                            "direct_manager",
+                            "hr",
+                            "system_admin",
+                            "target_hr"
+                          ]
+                        },
+                        "sla_hours": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 720
+                        },
+                        "finish": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "approver",
+                        "sla_hours"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                }
+              }
+            },
+            "personal_data": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "steps",
+                "group_overrides"
+              ],
+              "properties": {
+                "steps": {
+                  "type": "array",
+                  "maxItems": 5,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "approver": {
+                        "type": "string",
+                        "enum": [
+                          "direct_manager",
+                          "hr",
+                          "system_admin",
+                          "target_hr"
+                        ]
+                      },
+                      "sla_hours": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 720
+                      },
+                      "finish": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "approver",
+                      "sla_hours"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "group_overrides": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "maxItems": 5,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "approver": {
+                          "type": "string",
+                          "enum": [
+                            "direct_manager",
+                            "hr",
+                            "system_admin",
+                            "target_hr"
+                          ]
+                        },
+                        "sla_hours": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 720
+                        },
+                        "finish": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "approver",
+                        "sla_hours"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                }
+              }
+            },
+            "leave": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "steps",
+                "group_overrides"
+              ],
+              "properties": {
+                "steps": {
+                  "type": "array",
+                  "maxItems": 5,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "approver": {
+                        "type": "string",
+                        "enum": [
+                          "direct_manager",
+                          "hr",
+                          "system_admin",
+                          "target_hr"
+                        ]
+                      },
+                      "sla_hours": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 720
+                      },
+                      "finish": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "approver",
+                      "sla_hours"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "group_overrides": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "maxItems": 5,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "approver": {
+                          "type": "string",
+                          "enum": [
+                            "direct_manager",
+                            "hr",
+                            "system_admin",
+                            "target_hr"
+                          ]
+                        },
+                        "sla_hours": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 720
+                        },
+                        "finish": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "approver",
+                        "sla_hours"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                }
+              }
+            },
+            "movement": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "steps",
+                "group_overrides"
+              ],
+              "properties": {
+                "steps": {
+                  "type": "array",
+                  "maxItems": 5,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "approver": {
+                        "type": "string",
+                        "enum": [
+                          "direct_manager",
+                          "hr",
+                          "system_admin",
+                          "target_hr"
+                        ]
+                      },
+                      "sla_hours": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 720
+                      },
+                      "finish": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "approver",
+                      "sla_hours"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "group_overrides": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "maxItems": 5,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "approver": {
+                          "type": "string",
+                          "enum": [
+                            "direct_manager",
+                            "hr",
+                            "system_admin",
+                            "target_hr"
+                          ]
+                        },
+                        "sla_hours": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 720
+                        },
+                        "finish": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "approver",
+                        "sla_hours"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                }
+              }
+            },
+            "transfer": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "steps",
+                "group_overrides"
+              ],
+              "properties": {
+                "steps": {
+                  "type": "array",
+                  "maxItems": 5,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "approver": {
+                        "type": "string",
+                        "enum": [
+                          "direct_manager",
+                          "hr",
+                          "system_admin",
+                          "target_hr"
+                        ]
+                      },
+                      "sla_hours": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 720
+                      },
+                      "finish": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "approver",
+                      "sla_hours"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "group_overrides": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "maxItems": 5,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "approver": {
+                          "type": "string",
+                          "enum": [
+                            "direct_manager",
+                            "hr",
+                            "system_admin",
+                            "target_hr"
+                          ]
+                        },
+                        "sla_hours": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 720
+                        },
+                        "finish": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "approver",
+                        "sla_hours"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                }
+              }
+            },
+            "requisition": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "steps",
+                "group_overrides"
+              ],
+              "properties": {
+                "steps": {
+                  "type": "array",
+                  "maxItems": 5,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "approver": {
+                        "type": "string",
+                        "enum": [
+                          "direct_manager",
+                          "hr",
+                          "system_admin",
+                          "target_hr"
+                        ]
+                      },
+                      "sla_hours": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 720
+                      },
+                      "finish": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "approver",
+                      "sla_hours"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "group_overrides": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "maxItems": 5,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "approver": {
+                          "type": "string",
+                          "enum": [
+                            "direct_manager",
+                            "hr",
+                            "system_admin",
+                            "target_hr"
+                          ]
+                        },
+                        "sla_hours": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 720
+                        },
+                        "finish": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "approver",
+                        "sla_hours"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                }
+              }
+            },
+            "termination": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "steps",
+                "group_overrides"
+              ],
+              "properties": {
+                "steps": {
+                  "type": "array",
+                  "maxItems": 5,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "approver": {
+                        "type": "string",
+                        "enum": [
+                          "direct_manager",
+                          "hr",
+                          "system_admin",
+                          "target_hr"
+                        ]
+                      },
+                      "sla_hours": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 720
+                      },
+                      "finish": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "approver",
+                      "sla_hours"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "group_overrides": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "maxItems": 5,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "approver": {
+                          "type": "string",
+                          "enum": [
+                            "direct_manager",
+                            "hr",
+                            "system_admin",
+                            "target_hr"
+                          ]
+                        },
+                        "sla_hours": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 720
+                        },
+                        "finish": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "approver",
+                        "sla_hours"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                }
+              }
+            },
+            "recess": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "steps",
+                "group_overrides"
+              ],
+              "properties": {
+                "steps": {
+                  "type": "array",
+                  "maxItems": 5,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "approver": {
+                        "type": "string",
+                        "enum": [
+                          "direct_manager",
+                          "hr",
+                          "system_admin",
+                          "target_hr"
+                        ]
+                      },
+                      "sla_hours": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 720
+                      },
+                      "finish": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "approver",
+                      "sla_hours"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "group_overrides": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "maxItems": 5,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "approver": {
+                          "type": "string",
+                          "enum": [
+                            "direct_manager",
+                            "hr",
+                            "system_admin",
+                            "target_hr"
+                          ]
+                        },
+                        "sla_hours": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 720
+                        },
+                        "finish": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "approver",
+                        "sla_hours"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                }
+              }
+            },
+            "transport": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "steps",
+                "group_overrides"
+              ],
+              "properties": {
+                "steps": {
+                  "type": "array",
+                  "maxItems": 5,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "approver": {
+                        "type": "string",
+                        "enum": [
+                          "direct_manager",
+                          "hr",
+                          "system_admin",
+                          "target_hr"
+                        ]
+                      },
+                      "sla_hours": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 720
+                      },
+                      "finish": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "approver",
+                      "sla_hours"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "group_overrides": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "maxItems": 5,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "approver": {
+                          "type": "string",
+                          "enum": [
+                            "direct_manager",
+                            "hr",
+                            "system_admin",
+                            "target_hr"
+                          ]
+                        },
+                        "sla_hours": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 720
+                        },
+                        "finish": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "approver",
+                        "sla_hours"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                }
+              }
+            },
+            "value_entry": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "steps",
+                "group_overrides"
+              ],
+              "properties": {
+                "steps": {
+                  "type": "array",
+                  "maxItems": 5,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "approver": {
+                        "type": "string",
+                        "enum": [
+                          "direct_manager",
+                          "hr",
+                          "system_admin",
+                          "target_hr"
+                        ]
+                      },
+                      "sla_hours": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 720
+                      },
+                      "finish": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "approver",
+                      "sla_hours"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "group_overrides": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "maxItems": 5,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "approver": {
+                          "type": "string",
+                          "enum": [
+                            "direct_manager",
+                            "hr",
+                            "system_admin",
+                            "target_hr"
+                          ]
+                        },
+                        "sla_hours": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 720
+                        },
+                        "finish": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "approver",
+                        "sla_hours"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "scopes": [
+      {
+        "type": "company",
+        "label": "Configuração da empresa",
+        "id_field": null
+      }
+    ],
+    "precedence": [
+      {
+        "level": 1,
+        "scope": "company",
+        "description": "Versão vigente salva para a empresa em homologação."
+      },
+      {
+        "level": 2,
+        "scope": "default",
+        "description": "Padrão do sistema quando a empresa nunca salvou o módulo ou para parâmetros criados depois."
+      }
+    ],
+    "rules": [
+      "Até 5 etapas por processo; aprovadores válidos: direct_manager, hr, system_admin, target_hr; prazo de 1 a 720 horas úteis.",
+      "group_overrides mapeia o nome de um grupo de colaboradores para etapas próprias.",
+      "Todos os processos precisam constar em processes.",
+      "Configuração completa por empresa, em homologação, sem exceção por grupo neste módulo.",
+      "O plano deve informar todos os parâmetros do módulo; parâmetros não citados mantêm o valor atual.",
+      "A produção só muda pelo processo de publicação aprovado no HCM."
+    ],
+    "related_modules": [
+      {
+        "id": "assignments",
+        "label": "Atribuições de seleção",
+        "description": "Para quem cada processo pode ser aberto."
+      }
+    ],
+    "available_modules": [
+      {
+        "id": "vacations",
+        "label": "Férias",
+        "scopes": [
+          "company",
+          "group",
+          "config"
+        ]
+      },
+      {
+        "id": "admission",
+        "label": "Admissão",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "timekeeping",
+        "label": "Controle de ponto",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "payroll",
+        "label": "Folha demonstrativa",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "benefits",
+        "label": "Benefícios",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "contracting",
+        "label": "Contratação",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "vacation_policy",
+        "label": "Férias / aviso e abono",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "payroll_setup",
+        "label": "Grupos de cálculo e folhas",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "config_assignments",
+        "label": "Atribuições de Configurações",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "termination",
+        "label": "Rescisão / Aviso prévio",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "transport",
+        "label": "Vale-transporte",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "work_schedule",
+        "label": "Jornada e escala",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "dependents",
+        "label": "Dependentes",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "personal_data",
+        "label": "Alteração de dados pessoais",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "leave",
+        "label": "Afastamento / Ausência",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "movement",
+        "label": "Movimentação",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "transfer",
+        "label": "Cessão / Busca de colaborador",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "requisition",
+        "label": "Requisição de pessoal",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "recess",
+        "label": "Recesso de estágio",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "value_entry",
+        "label": "Lançamento de valores",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "recruitment",
+        "label": "Recrutamento e seleção",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "workflow",
+        "label": "Fluxos de aprovação e SLA",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "process_fields",
+        "label": "Informações adicionais dos processos",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "assignments",
+        "label": "Atribuições de seleção",
+        "scopes": [
+          "company"
+        ]
+      }
+    ],
+    "capabilities": {
+      "apply_homologation": true,
+      "automatic_tests": true,
+      "rollback": true,
+      "production_write": false,
+      "named_configurations": false,
+      "assignments": false,
+      "contract_hash": true
+    },
+    "contract_hash": "0ee0a2f6e53a71fe88afb62d224f604acf77c1c08645d2498a9a5b0db7d8d842"
+  },
+  "workflow_snapshot_EMP001": {
+    "contract": 2,
+    "company": {
+      "id": 3,
+      "code": "EMP001",
+      "name": "ABC Tecnologia"
+    },
+    "module": "workflow",
+    "as_of": "2026-11-02",
+    "consulted_at": "2026-11-02T00:54:24.256418+00:00",
+    "catalog_version": "workflow-2",
+    "contract_hash": "0ee0a2f6e53a71fe88afb62d224f604acf77c1c08645d2498a9a5b0db7d8d842",
+    "erp_version": "0.2.0",
+    "groups": [],
+    "schedules": {
+      "homologation": [
+        {
+          "id": null,
+          "scope_key": "company:3:default",
+          "company_id": 3,
+          "group_id": null,
+          "version": 0,
+          "effective_from": "0001-01-01",
+          "environment": "homologation",
+          "active": true,
+          "sla_enabled": true,
+          "business_start": "08:00",
+          "business_end": "18:00",
+          "business_days": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "skip_step_when_requester_is_approver": true,
+          "processes": {
+            "vacations": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "benefits": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "dependents": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "personal_data": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "leave": {
+              "steps": [
+                {
+                  "approver": "direct_manager",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "movement": {
+              "steps": [
+                {
+                  "approver": "direct_manager",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "transfer": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "target_hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "requisition": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 24
+                },
+                {
+                  "approver": "system_admin",
+                  "sla_hours": 24
+                }
+              ],
+              "group_overrides": {}
+            },
+            "termination": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "recess": {
+              "steps": [
+                {
+                  "approver": "direct_manager",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "transport": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "value_entry": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            }
+          }
+        },
+        {
+          "id": 105,
+          "scope_key": "company:3:default",
+          "company_id": 3,
+          "group_id": null,
+          "version": 1,
+          "effective_from": "2026-11-01",
+          "environment": "homologation",
+          "active": true,
+          "sla_enabled": true,
+          "business_start": "08:00",
+          "business_end": "18:00",
+          "business_days": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "skip_step_when_requester_is_approver": true,
+          "processes": {
+            "vacations": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "benefits": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "dependents": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "personal_data": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "leave": {
+              "steps": [
+                {
+                  "approver": "direct_manager",
+                  "sla_hours": 8
+                },
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "movement": {
+              "steps": [
+                {
+                  "approver": "direct_manager",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "transfer": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "target_hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "requisition": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 24
+                },
+                {
+                  "approver": "system_admin",
+                  "sla_hours": 24
+                }
+              ],
+              "group_overrides": {}
+            },
+            "termination": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "recess": {
+              "steps": [
+                {
+                  "approver": "direct_manager",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "transport": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "value_entry": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            }
+          }
+        },
+        {
+          "id": 106,
+          "scope_key": "company:3:default",
+          "company_id": 3,
+          "group_id": null,
+          "version": 2,
+          "effective_from": "2026-11-01",
+          "environment": "homologation",
+          "active": true,
+          "sla_enabled": true,
+          "business_start": "08:00",
+          "business_end": "18:00",
+          "business_days": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "skip_step_when_requester_is_approver": true,
+          "processes": {
+            "vacations": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "benefits": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "dependents": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "personal_data": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "leave": {
+              "steps": [
+                {
+                  "approver": "direct_manager",
+                  "sla_hours": 8
+                },
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "movement": {
+              "steps": [
+                {
+                  "approver": "direct_manager",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "transfer": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "target_hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "requisition": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 24
+                },
+                {
+                  "approver": "system_admin",
+                  "sla_hours": 24
+                }
+              ],
+              "group_overrides": {}
+            },
+            "termination": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "recess": {
+              "steps": [
+                {
+                  "approver": "direct_manager",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "transport": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "value_entry": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            }
+          }
+        },
+        {
+          "id": 107,
+          "scope_key": "company:3:default",
+          "company_id": 3,
+          "group_id": null,
+          "version": 3,
+          "effective_from": "2026-11-01",
+          "environment": "homologation",
+          "active": true,
+          "sla_enabled": true,
+          "business_start": "08:00",
+          "business_end": "18:00",
+          "business_days": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "skip_step_when_requester_is_approver": true,
+          "processes": {
+            "vacations": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "benefits": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "dependents": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "personal_data": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "leave": {
+              "steps": [
+                {
+                  "approver": "direct_manager",
+                  "sla_hours": 8
+                },
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "movement": {
+              "steps": [
+                {
+                  "approver": "direct_manager",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "transfer": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "target_hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "requisition": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 24
+                },
+                {
+                  "approver": "system_admin",
+                  "sla_hours": 24
+                }
+              ],
+              "group_overrides": {}
+            },
+            "termination": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "recess": {
+              "steps": [
+                {
+                  "approver": "direct_manager",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "transport": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "value_entry": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            }
+          }
+        },
+        {
+          "id": 108,
+          "scope_key": "company:3:default",
+          "company_id": 3,
+          "group_id": null,
+          "version": 4,
+          "effective_from": "2026-11-01",
+          "environment": "homologation",
+          "active": true,
+          "sla_enabled": true,
+          "business_start": "08:00",
+          "business_end": "18:00",
+          "business_days": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "skip_step_when_requester_is_approver": true,
+          "processes": {
+            "vacations": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "benefits": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "dependents": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "personal_data": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "leave": {
+              "steps": [
+                {
+                  "approver": "direct_manager",
+                  "sla_hours": 8
+                },
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {
+                "Gestores": [
+                  {
+                    "approver": "hr",
+                    "sla_hours": 8
+                  }
+                ]
+              }
+            },
+            "movement": {
+              "steps": [
+                {
+                  "approver": "direct_manager",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "transfer": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "target_hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "requisition": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 24
+                },
+                {
+                  "approver": "system_admin",
+                  "sla_hours": 24
+                }
+              ],
+              "group_overrides": {}
+            },
+            "termination": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "recess": {
+              "steps": [
+                {
+                  "approver": "direct_manager",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "transport": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "value_entry": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            }
+          }
+        }
+      ],
+      "production": [
+        {
+          "id": null,
+          "scope_key": "company:3:default",
+          "company_id": 3,
+          "group_id": null,
+          "version": 0,
+          "effective_from": "0001-01-01",
+          "environment": "production",
+          "active": true,
+          "sla_enabled": true,
+          "business_start": "08:00",
+          "business_end": "18:00",
+          "business_days": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "skip_step_when_requester_is_approver": true,
+          "processes": {
+            "vacations": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "benefits": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "dependents": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "personal_data": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "leave": {
+              "steps": [
+                {
+                  "approver": "direct_manager",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "movement": {
+              "steps": [
+                {
+                  "approver": "direct_manager",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "transfer": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "target_hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "requisition": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 24
+                },
+                {
+                  "approver": "system_admin",
+                  "sla_hours": 24
+                }
+              ],
+              "group_overrides": {}
+            },
+            "termination": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "recess": {
+              "steps": [
+                {
+                  "approver": "direct_manager",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "transport": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "value_entry": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            }
+          }
+        },
+        {
+          "id": 109,
+          "scope_key": "company:3:default",
+          "company_id": 3,
+          "group_id": null,
+          "version": 1,
+          "effective_from": "2026-11-01",
+          "environment": "production",
+          "active": true,
+          "sla_enabled": true,
+          "business_start": "08:00",
+          "business_end": "18:00",
+          "business_days": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "skip_step_when_requester_is_approver": true,
+          "processes": {
+            "vacations": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "benefits": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "dependents": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "personal_data": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "leave": {
+              "steps": [
+                {
+                  "approver": "direct_manager",
+                  "sla_hours": 8
+                },
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {
+                "Gestores": [
+                  {
+                    "approver": "hr",
+                    "sla_hours": 8
+                  }
+                ]
+              }
+            },
+            "movement": {
+              "steps": [
+                {
+                  "approver": "direct_manager",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "transfer": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "target_hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "requisition": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 24
+                },
+                {
+                  "approver": "system_admin",
+                  "sla_hours": 24
+                }
+              ],
+              "group_overrides": {}
+            },
+            "termination": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "recess": {
+              "steps": [
+                {
+                  "approver": "direct_manager",
+                  "sla_hours": 16
+                },
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "transport": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            },
+            "value_entry": {
+              "steps": [
+                {
+                  "approver": "hr",
+                  "sla_hours": 16
+                }
+              ],
+              "group_overrides": {}
+            }
+          }
+        }
+      ]
+    },
+    "effective": {
+      "homologation": [
+        {
+          "group_id": null,
+          "group_name": "Regra geral",
+          "configuration": {
+            "id": 108,
+            "scope_key": "company:3:default",
+            "company_id": 3,
+            "group_id": null,
+            "version": 4,
+            "effective_from": "2026-11-01",
+            "environment": "homologation",
+            "active": true,
+            "sla_enabled": true,
+            "business_start": "08:00",
+            "business_end": "18:00",
+            "business_days": [
+              0,
+              1,
+              2,
+              3,
+              4
+            ],
+            "skip_step_when_requester_is_approver": true,
+            "processes": {
+              "vacations": {
+                "steps": [
+                  {
+                    "approver": "hr",
+                    "sla_hours": 16
+                  }
+                ],
+                "group_overrides": {}
+              },
+              "benefits": {
+                "steps": [
+                  {
+                    "approver": "hr",
+                    "sla_hours": 16
+                  }
+                ],
+                "group_overrides": {}
+              },
+              "dependents": {
+                "steps": [
+                  {
+                    "approver": "hr",
+                    "sla_hours": 16
+                  }
+                ],
+                "group_overrides": {}
+              },
+              "personal_data": {
+                "steps": [
+                  {
+                    "approver": "hr",
+                    "sla_hours": 16
+                  }
+                ],
+                "group_overrides": {}
+              },
+              "leave": {
+                "steps": [
+                  {
+                    "approver": "direct_manager",
+                    "sla_hours": 8
+                  },
+                  {
+                    "approver": "hr",
+                    "sla_hours": 16
+                  }
+                ],
+                "group_overrides": {
+                  "Gestores": [
+                    {
+                      "approver": "hr",
+                      "sla_hours": 8
+                    }
+                  ]
+                }
+              },
+              "movement": {
+                "steps": [
+                  {
+                    "approver": "direct_manager",
+                    "sla_hours": 16
+                  },
+                  {
+                    "approver": "hr",
+                    "sla_hours": 16
+                  }
+                ],
+                "group_overrides": {}
+              },
+              "transfer": {
+                "steps": [
+                  {
+                    "approver": "hr",
+                    "sla_hours": 16
+                  },
+                  {
+                    "approver": "target_hr",
+                    "sla_hours": 16
+                  }
+                ],
+                "group_overrides": {}
+              },
+              "requisition": {
+                "steps": [
+                  {
+                    "approver": "hr",
+                    "sla_hours": 24
+                  },
+                  {
+                    "approver": "system_admin",
+                    "sla_hours": 24
+                  }
+                ],
+                "group_overrides": {}
+              },
+              "termination": {
+                "steps": [
+                  {
+                    "approver": "hr",
+                    "sla_hours": 16
+                  }
+                ],
+                "group_overrides": {}
+              },
+              "recess": {
+                "steps": [
+                  {
+                    "approver": "direct_manager",
+                    "sla_hours": 16
+                  },
+                  {
+                    "approver": "hr",
+                    "sla_hours": 16
+                  }
+                ],
+                "group_overrides": {}
+              },
+              "transport": {
+                "steps": [
+                  {
+                    "approver": "hr",
+                    "sla_hours": 16
+                  }
+                ],
+                "group_overrides": {}
+              },
+              "value_entry": {
+                "steps": [
+                  {
+                    "approver": "hr",
+                    "sla_hours": 16
+                  }
+                ],
+                "group_overrides": {}
+              }
+            }
+          },
+          "origin": {
+            "scope": "company",
+            "version": 4
+          }
+        }
+      ],
+      "production": [
+        {
+          "group_id": null,
+          "group_name": "Regra geral",
+          "configuration": {
+            "id": 109,
+            "scope_key": "company:3:default",
+            "company_id": 3,
+            "group_id": null,
+            "version": 1,
+            "effective_from": "2026-11-01",
+            "environment": "production",
+            "active": true,
+            "sla_enabled": true,
+            "business_start": "08:00",
+            "business_end": "18:00",
+            "business_days": [
+              0,
+              1,
+              2,
+              3,
+              4
+            ],
+            "skip_step_when_requester_is_approver": true,
+            "processes": {
+              "vacations": {
+                "steps": [
+                  {
+                    "approver": "hr",
+                    "sla_hours": 16
+                  }
+                ],
+                "group_overrides": {}
+              },
+              "benefits": {
+                "steps": [
+                  {
+                    "approver": "hr",
+                    "sla_hours": 16
+                  }
+                ],
+                "group_overrides": {}
+              },
+              "dependents": {
+                "steps": [
+                  {
+                    "approver": "hr",
+                    "sla_hours": 16
+                  }
+                ],
+                "group_overrides": {}
+              },
+              "personal_data": {
+                "steps": [
+                  {
+                    "approver": "hr",
+                    "sla_hours": 16
+                  }
+                ],
+                "group_overrides": {}
+              },
+              "leave": {
+                "steps": [
+                  {
+                    "approver": "direct_manager",
+                    "sla_hours": 8
+                  },
+                  {
+                    "approver": "hr",
+                    "sla_hours": 16
+                  }
+                ],
+                "group_overrides": {
+                  "Gestores": [
+                    {
+                      "approver": "hr",
+                      "sla_hours": 8
+                    }
+                  ]
+                }
+              },
+              "movement": {
+                "steps": [
+                  {
+                    "approver": "direct_manager",
+                    "sla_hours": 16
+                  },
+                  {
+                    "approver": "hr",
+                    "sla_hours": 16
+                  }
+                ],
+                "group_overrides": {}
+              },
+              "transfer": {
+                "steps": [
+                  {
+                    "approver": "hr",
+                    "sla_hours": 16
+                  },
+                  {
+                    "approver": "target_hr",
+                    "sla_hours": 16
+                  }
+                ],
+                "group_overrides": {}
+              },
+              "requisition": {
+                "steps": [
+                  {
+                    "approver": "hr",
+                    "sla_hours": 24
+                  },
+                  {
+                    "approver": "system_admin",
+                    "sla_hours": 24
+                  }
+                ],
+                "group_overrides": {}
+              },
+              "termination": {
+                "steps": [
+                  {
+                    "approver": "hr",
+                    "sla_hours": 16
+                  }
+                ],
+                "group_overrides": {}
+              },
+              "recess": {
+                "steps": [
+                  {
+                    "approver": "direct_manager",
+                    "sla_hours": 16
+                  },
+                  {
+                    "approver": "hr",
+                    "sla_hours": 16
+                  }
+                ],
+                "group_overrides": {}
+              },
+              "transport": {
+                "steps": [
+                  {
+                    "approver": "hr",
+                    "sla_hours": 16
+                  }
+                ],
+                "group_overrides": {}
+              },
+              "value_entry": {
+                "steps": [
+                  {
+                    "approver": "hr",
+                    "sla_hours": 16
+                  }
+                ],
+                "group_overrides": {}
+              }
+            }
+          },
+          "origin": {
+            "scope": "company",
+            "version": 1
+          }
+        }
+      ]
+    },
+    "assignments": null,
+    "fingerprint": "901b5f873c0864f6a59b18ff0735154afe1521c0af6e451d5bf167457fc8f05a"
+  },
+  "config_assignments_catalog": {
+    "version": "config_assignments-2",
+    "contract": 2,
+    "erp_version": "0.2.0",
+    "module": "config_assignments",
+    "module_label": "Atribuições de Configurações",
+    "fields": [
+      {
+        "id": "vacations",
+        "label": "Férias",
+        "type": "array",
+        "schema": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "group",
+              "config"
+            ],
+            "properties": {
+              "group": {
+                "type": "string",
+                "minLength": 1
+              },
+              "config": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      },
+      {
+        "id": "vacations_simulation",
+        "label": "Férias - Simulação",
+        "type": "array",
+        "schema": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "group",
+              "config"
+            ],
+            "properties": {
+              "group": {
+                "type": "string",
+                "minLength": 1
+              },
+              "config": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    ],
+    "scopes": [
+      {
+        "type": "company",
+        "label": "Configuração da empresa",
+        "id_field": null
+      }
+    ],
+    "precedence": [
+      {
+        "level": 1,
+        "scope": "company",
+        "description": "Versão vigente salva para a empresa em homologação."
+      },
+      {
+        "level": 2,
+        "scope": "default",
+        "description": "Padrão do sistema quando a empresa nunca salvou o módulo ou para parâmetros criados depois."
+      }
+    ],
+    "rules": [
+      "Grupo e configuração devem existir em homologação; em vacations_simulation só entram configurações com simulação habilitada.",
+      "A ordem da lista define a prioridade quando o colaborador participa de mais de um grupo.",
+      "Configuração completa por empresa, em homologação, sem exceção por grupo neste módulo.",
+      "O plano deve informar todos os parâmetros do módulo; parâmetros não citados mantêm o valor atual.",
+      "A produção só muda pelo processo de publicação aprovado no HCM."
+    ],
+    "related_modules": [
+      {
+        "id": "vacations",
+        "label": "Férias",
+        "description": "Configurações nomeadas referenciadas pelas atribuições."
+      }
+    ],
+    "available_modules": [
+      {
+        "id": "vacations",
+        "label": "Férias",
+        "scopes": [
+          "company",
+          "group",
+          "config"
+        ]
+      },
+      {
+        "id": "admission",
+        "label": "Admissão",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "timekeeping",
+        "label": "Controle de ponto",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "payroll",
+        "label": "Folha demonstrativa",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "benefits",
+        "label": "Benefícios",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "contracting",
+        "label": "Contratação",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "vacation_policy",
+        "label": "Férias / aviso e abono",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "payroll_setup",
+        "label": "Grupos de cálculo e folhas",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "config_assignments",
+        "label": "Atribuições de Configurações",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "termination",
+        "label": "Rescisão / Aviso prévio",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "transport",
+        "label": "Vale-transporte",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "work_schedule",
+        "label": "Jornada e escala",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "dependents",
+        "label": "Dependentes",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "personal_data",
+        "label": "Alteração de dados pessoais",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "leave",
+        "label": "Afastamento / Ausência",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "movement",
+        "label": "Movimentação",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "transfer",
+        "label": "Cessão / Busca de colaborador",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "requisition",
+        "label": "Requisição de pessoal",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "recess",
+        "label": "Recesso de estágio",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "value_entry",
+        "label": "Lançamento de valores",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "recruitment",
+        "label": "Recrutamento e seleção",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "workflow",
+        "label": "Fluxos de aprovação e SLA",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "process_fields",
+        "label": "Informações adicionais dos processos",
+        "scopes": [
+          "company"
+        ]
+      },
+      {
+        "id": "assignments",
+        "label": "Atribuições de seleção",
+        "scopes": [
+          "company"
+        ]
+      }
+    ],
+    "capabilities": {
+      "apply_homologation": true,
+      "automatic_tests": true,
+      "rollback": true,
+      "production_write": false,
+      "named_configurations": false,
+      "assignments": false,
+      "contract_hash": true
+    },
+    "contract_hash": "1f2e07804227f95efcb7c8135adc3816fac0dae2204430d8d1ad09912ff6fee6"
+  }
+}

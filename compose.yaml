@@ -1,0 +1,46 @@
+name: erp-ai
+services:
+  database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: erp_ai
+      POSTGRES_USER: erp_ai
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?Configure DATABASE_PASSWORD}
+    volumes:
+      - erp_ai_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp_ai -d erp_ai"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://erp_ai:${DATABASE_PASSWORD}@database:5432/erp_ai
+      HCM_BASE_URL: http://host.docker.internal:8000
+      APP_ORIGIN: http://localhost:3001
+      LLM_CONFIG_FILE: /run/erp-ai/secrets/model.json
+    volumes:
+      - ./secrets:/run/erp-ai/secrets
+    ports:
+      - "127.0.0.1:8001:8001"
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  frontend:
+    build: ./frontend
+    environment:
+      API_PROXY_URL: http://backend:8001
+    ports:
+      - "127.0.0.1:3001:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+volumes:
+  erp_ai_data:

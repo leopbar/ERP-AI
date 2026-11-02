@@ -1,0 +1,11 @@
+.env
+.local-access.txt
+.venv/
+__pycache__/
+.pytest_cache/
+*.db
+frontend/node_modules/
+frontend/.next/
+frontend/tsconfig.tsbuildinfo
+artifacts/
+secrets/
