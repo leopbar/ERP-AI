@@ -158,10 +158,10 @@ def test_hr_module_snapshot_without_assignments_reaches_interpretation(setup, mo
     client, fake, _ = setup
     monkeypatch.setenv("LANGGRAPH_SQLITE_PATH", str(tmp_path / "checkpoints.db"))
     monkeypatch.setattr(flow.provider, "read_config", lambda: {"api_key": "fake-only", "base_url": "https://example.invalid/v1", "model": "unused"})
-    options = {"explanation": "Interpretações.", "options": [{"title": f"Opção {i}", "meaning": f"Significado distinto número {i} para a regra de ponto.", "example": "Exemplo.", "support": "supported", "limitations": []} for i in range(3)]}
+    options = {"explanation": "Interpretações.", "options": [{"title": f"Opção {i}", "meaning": f"Significado distinto número {i} para a regra de ponto.", "example": "Exemplo.", "target_level": "regra da empresa", "support": "supported", "limitations": [], "missing_capabilities": []} for i in range(3)]}
     def completion(config, messages, schema, *, name, **kwargs):
         if name == "module_classifier":
-            return {"module": "time", "explanation": "Ponto.", "company_query": "ABC Ltda", "scope": "parametrization"}, {"mode": "model", "model": config["model"], "usage": {}}
+            return {"module": "timekeeping", "explanation": "Ponto.", "company_query": "ABC Ltda", "scope": "parametrization"}, {"mode": "model", "model": config["model"], "usage": {}}
         return copy.deepcopy(options), {"mode": "model", "model": config["model"], "usage": {}}
     monkeypatch.setattr(flow.provider, "completion", completion)
     original = fake.snapshot

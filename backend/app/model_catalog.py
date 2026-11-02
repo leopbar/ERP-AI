@@ -22,8 +22,8 @@ MODELS = [
      "description": "Referência de capacidade para comparações pontuais. Não é necessário usá-lo como padrão neste sistema."},
 ]
 
-def previous_model(model_id, name, input_rate, output_rate, cached_rate, shutdown=None):
-    return {"id": model_id, "name": name, "input_usd": input_rate, "output_usd": output_rate, "cached_input_usd": cached_rate,
+def previous_model(model_id, name, input_rate, output_rate, cached_rate, shutdown=None, reasoning=True):
+    return {"id": model_id, "name": name, "input_usd": input_rate, "output_usd": output_rate, "cached_input_usd": cached_rate, "reasoning": reasoning,
             "recommendation": "Anterior · comparar com atuais" if shutdown is None else "Anterior · retirada anunciada",
             "recommended": False, "shutdown_date": shutdown,
             "description": "Modelo anterior compatível com propostas estruturadas. Compare custo, correções e tempo no mesmo conjunto de cenários antes de adotar."}
@@ -44,11 +44,18 @@ MODELS += [
     previous_model("gpt-5", "GPT-5", 1.25, 10.00, 0.125, "2026-12-11"),
     previous_model("gpt-5-mini", "GPT-5 mini", 0.25, 2.00, 0.025, "2026-12-11"),
     previous_model("gpt-5-nano", "GPT-5 nano", 0.05, 0.40, 0.005, "2026-12-11"),
-    previous_model("gpt-4.1", "GPT-4.1", 2.00, 8.00, 0.50, "2027-01-14"),
-    previous_model("gpt-4.1-mini", "GPT-4.1 mini", 0.40, 1.60, 0.10, "2027-01-14"),
-    previous_model("gpt-4o", "GPT-4o", 2.50, 10.00, 1.25, "2027-01-14"),
-    previous_model("gpt-4o-mini", "GPT-4o mini", 0.15, 0.60, 0.075, "2027-01-14"),
+    previous_model("gpt-4.1", "GPT-4.1", 2.00, 8.00, 0.50, "2027-01-14", reasoning=False),
+    previous_model("gpt-4.1-mini", "GPT-4.1 mini", 0.40, 1.60, 0.10, "2027-01-14", reasoning=False),
+    previous_model("gpt-4o", "GPT-4o", 2.50, 10.00, 1.25, "2027-01-14", reasoning=False),
+    previous_model("gpt-4o-mini", "GPT-4o mini", 0.15, 0.60, 0.075, "2027-01-14", reasoning=False),
 ]
+for _model in MODELS:
+    _model.setdefault("reasoning", True)  # current generations accept reasoning_effort; the catalog, not a name prefix, decides
+
+def supports_reasoning_effort(model_id):
+    """Whether the request may carry reasoning_effort. Unknown models (compatible providers) get no such parameter."""
+    model = next((item for item in MODELS if item["id"] == model_id), None)
+    return bool(model and model.get("reasoning"))
 DEPRECATION_SOURCE = "https://developers.openai.com/api/docs/deprecations"
 
 def active_models(today=None):
@@ -84,7 +91,7 @@ def list_models(config):
             "recommendation_note": "Recomendações de arquitetura para o sistema; ainda não são resultado de avaliação comparativa no HCM.",
             "deprecation_source": DEPRECATION_SOURCE,
             "excluded_note": "Modelos desligados e variantes especializadas sem suporte ao contrato desta integração não são oferecidos.",
-            "models": [{**model, "generation": "4" if model["id"].startswith("gpt-4") else "5" if model["id"].startswith("gpt-5") else "6",
+            "models": [{**model, "generation": "4" if model["id"].startswith("gpt-4") else "5" if model["id"].startswith("gpt-5") else "6", "reasoning": bool(model.get("reasoning")),
                         "lifecycle": "retiring" if model.get("shutdown_date") else "active",
                         "listed_in_account": model["id"] in ids if ids is not None else None,
                         "documentation": "https://developers.openai.com/api/docs/models/" + model["id"],

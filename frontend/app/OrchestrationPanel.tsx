@@ -1,7 +1,6 @@
 'use client';
 import {useEffect, useState} from 'react';
 type Json = Record<string, any>;
-const modules:Record<string,string>={vacations:'Férias',payroll:'Folha e demonstrativo',time:'Controle de ponto',admission:'Admissão',benefits:'Benefícios',other:'Outros / mais de um módulo'};
 const support:Record<string,string>={supported:'Pode ser parametrizado pelo catálogo',partial:'Atendimento parcial · faltam capacidades',unsupported:'Sem capacidade disponível na integração'};
 
 export function ModelRouting({primary,escalation,setPrimary,setEscalation}:{primary:string;escalation:string;setPrimary:(s:string)=>void;setEscalation:(s:string)=>void}){

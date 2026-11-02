@@ -115,6 +115,10 @@ Critério de aceite: suíte ERP verde; `live_orchestration.py` e `live_hr_accept
 
 ## Fase 3 · ERP: agentes dirigidos pelo catálogo
 
+**Estado em 01/11/2026: implementada.** O classificador recebe a lista de módulos publicada pelo HCM (`GET /v2/modules`, agora com `description` por módulo, acrescentada em `integration_v2.py` do HCM) e seu contrato de saída é construído em tempo de execução a partir dela; a lista fica gravada no estado do fluxo para a retomada não mudar de contrato. Rótulos e exemplos deixaram de ser mapas fixos no backend e no frontend. O intérprete recebe nomeadas, atribuições e sobreposição de grupos, declara em cada opção o nível que pretende alterar (`target_level`) e descreve lacunas de forma estruturada (`missing_capabilities` com módulo e descrição), que a fila Não tratados expõe em `workflow.capabilities`. O planejador ganhou uma rodada de reparo automático com o erro do validador antes de encaminhar ao consultor; a métrica registra `repair`. Cada papel envia sua versão de prompt (`PROMPT_VERSIONS`). O esforço de raciocínio é decidido pelo atributo `reasoning` do catálogo de modelos, não por prefixo. Suíte: 75 testes verdes. Aceitação real em Férias e Controle de Ponto repetida com sucesso.
+
+Pendências desta fase: o exemplo de pedido por módulo ainda é um dicionário no ERP com um texto genérico para módulos desconhecidos; o editor manual do frontend não oferece criar configuração nomeada nova nem editar atribuições, só a API e os agentes fazem isso.
+
 Arquivos: `backend/app/orchestration.py`, `orchestration_api.py`, `provider.py`, `frontend/app/*.tsx`.
 
 3.1 **Classificação dinâmica**

@@ -95,7 +95,12 @@ class FakeHCM:
     def for_module(self, module):
         return self
     def modules(self):
-        return [{"id": "vacations", "label": "Férias"}, {"id": "timekeeping", "label": "Controle de ponto"}]
+        return [{"id": "vacations", "label": "Férias", "description": "Regras de solicitação de férias.", "scopes": ["company", "group", "config"]},
+                {"id": "timekeeping", "label": "Controle de ponto", "description": "Jornada, intervalo, tolerância e horas extras.", "scopes": ["company"]},
+                {"id": "admission", "label": "Admissão", "description": "Antecedência e documentos da admissão.", "scopes": ["company"]},
+                {"id": "payroll", "label": "Folha demonstrativa", "description": "Moeda e aviso da folha demonstrativa.", "scopes": ["company"]},
+                {"id": "benefits", "label": "Benefícios", "description": "Processo e solicitação de benefícios.", "scopes": ["company"]},
+                {"id": "workflow", "label": "Fluxos de aprovação e SLA", "description": "Etapas de aprovação e prazos de todos os processos.", "scopes": ["company"]}]
     def snapshot(self, as_of, company_code):
         assert company_code == self.data["company"]["code"]
         snapshot = resolve(self.data, str(as_of))

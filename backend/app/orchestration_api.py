@@ -13,7 +13,7 @@ from app.database import get_db
 from app.hcm import get_hcm
 from app.main import app, editable, event, load, output, save
 from app.models import Case, InterpretationMemory
-from app.orchestration import MODULES, EXAMPLES, build_graph, checkpointer, validate_models, record_memory
+from app.orchestration import EXAMPLES, GENERIC_EXAMPLE, module_label, build_graph, checkpointer, validate_models, record_memory
 from app.hcm import canonical_module
 
 class Start(Action):
@@ -23,7 +23,7 @@ class Start(Action):
 
 class Continue(Action):
     action: Literal["guide", "clarify", "handoff", "choose", "retry", "expert", "close"]
-    module: Literal["vacations", "payroll", "time", "admission", "benefits", "other"] = "vacations"
+    module: str = Field(default="vacations", max_length=40)
     request: str = Field(default="", max_length=8000)
     choice: Literal["1", "2", "3", "none"] = "none"
     company_code: str = Field(default="", max_length=20)
@@ -45,8 +45,9 @@ def project(db, row, graph, config, user, error=None):
     phase = pending.get("phase") if pending else state.get("phase", "starting")
     previous = row.workflow or {}
     data = {**previous, "engine": "LangGraph", "phase": phase, "module": state.get("module"),
-        "module_label": MODULES.get(state.get("module"), "Identificando módulo"), "modules": MODULES,
-        "example": EXAMPLES.get(state.get("module"), ""), "classification": state.get("classification", {}),
+        "module_label": module_label(state, state.get("module")) if state.get("module") else "Identificando módulo", "modules": state.get("modules", []),
+        "example": EXAMPLES.get(state.get("module"), GENERIC_EXAMPLE), "classification": state.get("classification", {}),
+        "capabilities": state.get("handoff_capabilities", []),
         "catalog_fields": state.get("catalog", {}).get("fields", []),
         "catalog": state.get("catalog", {}),
         "scope_reason": state.get("scope_reason", ""), "scope_rejection_count": state.get("scope_rejection_count", 0),
@@ -174,7 +175,7 @@ def resume(case_id: int, payload: Continue, db: Session = Depends(get_db), user=
         if not company:
             raise HTTPException(422, "Empresa não encontrada no HCM. Faça a busca pelo nome novamente.")
         event(row, "company_confirmed", user, company=company)
-        value = {"module": payload.module, "request": payload.request, "confirmed_company": company}
+        value = {"module": canonical_module(payload.module), "request": payload.request, "confirmed_company": company}
     elif payload.action == "choose" and phase == "choice":
         value = {"choice": payload.choice, "comment": payload.comment.strip()}
         event(row, "interpretation_rejected" if payload.choice == "none" else "interpretation_confirmed", user,
@@ -205,9 +206,13 @@ def queue(db: Session = Depends(get_db), user=Depends(require_user)):
              "reason": r.workflow.get("error") or r.workflow.get("reason") or next((str(e.get("error")) for e in reversed(r.events) if e.get("error")), "O atendimento precisa de revisão do consultor."), "updated_at": r.updated_at} for r in rows]
 
 @app.get("/api/interpretation-memories")
-def memories(db: Session = Depends(get_db), user=Depends(require_user)):
+def memories(db: Session = Depends(get_db), user=Depends(require_user), hcm=Depends(get_hcm)):
     rows = db.scalars(select(InterpretationMemory).where(InterpretationMemory.actor == user).order_by(InterpretationMemory.id.desc()).limit(100)).all()
-    return [{"id": r.id, "case_id": r.case_id, "request": r.request, "meaning": r.meaning, "module": MODULES[r.module], "active": r.active} for r in rows]
+    try:
+        labels = {canonical_module(item["id"]): item["label"] for item in hcm.modules()}
+    except HTTPException:
+        labels = {}
+    return [{"id": r.id, "case_id": r.case_id, "request": r.request, "meaning": r.meaning, "module": labels.get(canonical_module(r.module), r.module), "active": r.active} for r in rows]
 
 @app.post("/api/interpretation-memories/{memory_id}/forget")
 def forget(memory_id: int, db: Session = Depends(get_db), user=Depends(require_user)):

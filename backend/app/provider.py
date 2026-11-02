@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 from app.contracts import Proposal
 from app.model_settings import read_config
-from app.model_catalog import estimate_cost
+from app.model_catalog import estimate_cost, supports_reasoning_effort
 from app.schema_tools import from_model_value, to_model_schema
 from app.workflow import catalog_fields, field_schema, scope_types
 
@@ -90,13 +90,13 @@ def compact_context(snapshot, sources):
             source["content"].pop("input_schema", None)
     return context, reduced
 
-def completion(config, messages, schema, *, name="vacation_proposal", token_limit=None):
+def completion(config, messages, schema, *, name="vacation_proposal", token_limit=None, prompt_version=None):
     start = time.monotonic()
     try:
         payload = {"model": config["model"], "messages": messages, "store": False,
                    "max_completion_tokens": token_limit or config.get("max_completion_tokens", 4096),
                    "response_format": {"type": "json_schema", "json_schema": {"name": name, "strict": True, "schema": schema}}}
-        if config["model"].startswith(("gpt-6", "gpt-5")):
+        if supports_reasoning_effort(config["model"]):
             payload["reasoning_effort"] = "low" if name == "connection_check" else config.get("reasoning_effort", "medium")
         with httpx.Client(timeout=90, follow_redirects=False) as client:
             response = client.post(config["base_url"].rstrip("/") + "/chat/completions",
@@ -119,7 +119,7 @@ def completion(config, messages, schema, *, name="vacation_proposal", token_limi
             raise HTTPException(502, "A resposta do modelo ficou incompleta. Revise o limite de saída ou simplifique o atendimento.")
         content = json.loads(choice["message"]["content"])
         return content, {"mode": "model", "model": config["model"], "provider": "OpenAI" if config["base_url"] == "https://api.openai.com/v1" else "compatible",
-                         "prompt_version": PROMPT_VERSION, "schema_sha256": hashlib.sha256(json.dumps(schema, sort_keys=True).encode()).hexdigest(),
+                         "prompt_version": prompt_version or PROMPT_VERSION, "schema_sha256": hashlib.sha256(json.dumps(schema, sort_keys=True).encode()).hexdigest(),
                          "duration_seconds": round(time.monotonic() - start, 3), "usage": body.get("usage", {}), "cost": estimate_cost(config["model"], body.get("usage", {}))}
     except httpx.TimeoutException as exc:
         raise HTTPException(504, "O modelo demorou além do limite. Nenhuma configuração do HCM foi alterada.") from exc

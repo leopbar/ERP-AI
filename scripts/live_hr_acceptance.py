@@ -32,7 +32,7 @@ with httpx.Client(base_url="http://localhost:3001",headers={"Origin":"http://loc
         case_id=row["id"]
         row=action(row,"orchestrate",primary_model="gpt-6-luna",escalation_model="gpt-6.1-sol")
         assert row["status"]=="awaiting_interpretation",row["workflow"].get("reason")
-        assert row["workflow"]["module"]=="time" and row["company_code"]==company["code"]
+        assert row["workflow"]["module"]=="timekeeping" and row["module"]=="timekeeping" and row["company_code"]==company["code"]
         row=action(row,"workflow",action="choose",choice=row["workflow"]["options"][0]["id"])
         assert row["status"]=="review",row["workflow"].get("reason")
         expected={k:v for k,v in baseline["effective"]["homologation"][0]["configuration"].items() if k in {f["id"] for f in row["workflow"]["catalog"]["fields"]}}

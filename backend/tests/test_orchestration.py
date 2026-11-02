@@ -9,9 +9,9 @@ from app.models import InterpretationMemory
 from test_workflow import setup, PROPOSAL
 
 OPTIONS = {"explanation": "Três maneiras de interpretar sua regra.", "options": [
-    {"title": "Pelo menos quinze dias", "meaning": "Permitir pedidos com pelo menos quinze dias de antecedência, para toda a empresa ABC.", "example": "Férias dia 30: pedir até dia 15.", "support": "supported", "limitations": []},
-    {"title": "No máximo quinze dias", "meaning": "Permitir pedidos apenas dentro dos quinze dias anteriores às férias.", "example": "Férias dia 30: pedir do dia 15 em diante.", "support": "unsupported", "limitations": ["Não existe antecedência máxima."]},
-    {"title": "Exatamente quinze dias", "meaning": "Permitir pedidos somente no décimo quinto dia antes das férias.", "example": "Férias dia 30: pedir somente dia 15.", "support": "unsupported", "limitations": ["Não existe janela de um dia."]}]}
+    {"title": "Pelo menos quinze dias", "meaning": "Permitir pedidos com pelo menos quinze dias de antecedência, para toda a empresa ABC.", "example": "Férias dia 30: pedir até dia 15.", "target_level": "regra geral da empresa", "support": "supported", "limitations": [], "missing_capabilities": []},
+    {"title": "No máximo quinze dias", "meaning": "Permitir pedidos apenas dentro dos quinze dias anteriores às férias.", "example": "Férias dia 30: pedir do dia 15 em diante.", "target_level": "regra geral da empresa", "support": "unsupported", "limitations": ["Não existe antecedência máxima."], "missing_capabilities": [{"module": "vacations", "description": "Antecedência máxima para solicitação."}]},
+    {"title": "Exatamente quinze dias", "meaning": "Permitir pedidos somente no décimo quinto dia antes das férias.", "example": "Férias dia 30: pedir somente dia 15.", "target_level": "regra geral da empresa", "support": "unsupported", "limitations": ["Não existe janela de um dia."], "missing_capabilities": [{"module": "vacations", "description": "Janela exata de solicitação."}]}]}
 
 @pytest.fixture
 def agents(setup, monkeypatch, tmp_path):
@@ -235,6 +235,7 @@ def test_missing_capabilities_are_automatically_registered_in_unhandled(agents, 
             for option in value["options"]:
                 option["support"] = "unsupported"
                 option["limitations"] = ["O HCM não possui limite anual de solicitações."]
+                option["missing_capabilities"] = [{"module": "vacations", "description": "Limite anual de solicitações de férias."}]
         return value, metrics
     monkeypatch.setattr(flow.provider, "completion", unsupported)
     row = start(client)
@@ -242,6 +243,7 @@ def test_missing_capabilities_are_automatically_registered_in_unhandled(agents, 
     item = client.get("/api/unhandled").json()[0]
     assert item["id"] == row["id"] and item["company"] == "ABC"
     assert item["category"] == "missing_capability" and "anual" in item["reason"]
+    assert row["workflow"]["capabilities"] == [{"module": "vacations", "description": "Limite anual de solicitações de férias."}]
     row = post(client, row, action="close", comment="É necessário disponibilizar a capacidade de limitar solicitações por ano.")
     assert row["status"] == "consultant_closed"
     assert not client.get("/api/unhandled").json()
