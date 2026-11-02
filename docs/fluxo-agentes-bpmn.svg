@@ -1,0 +1,259 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2060 1140" width="2060" height="1140" font-family="Segoe UI, Arial, sans-serif" font-size="13">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f2937"/></marker>
+    <marker id="msg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="none" stroke="#6b7280" stroke-width="1.2"/></marker>
+    <style>
+      .lane { fill: #ffffff; stroke: #9ca3af; stroke-width: 1.2; }
+      .lane-title { font-size: 13px; font-weight: 700; fill: #374151; }
+      .task { fill: #f8fafc; stroke: #334155; stroke-width: 1.6; rx: 10; }
+      .task-ai { fill: #fff7ed; stroke: #c2410c; stroke-width: 1.8; rx: 10; }
+      .task-hcm { fill: #ecfdf5; stroke: #047857; stroke-width: 1.6; rx: 10; }
+      .task-user { fill: #eff6ff; stroke: #1d4ed8; stroke-width: 1.6; rx: 10; }
+      .gw { fill: #fef9c3; stroke: #a16207; stroke-width: 1.6; }
+      .ev-start { fill: #ffffff; stroke: #15803d; stroke-width: 2; }
+      .ev-end { fill: #ffffff; stroke: #b91c1c; stroke-width: 4; }
+      .ev-pause { fill: #ffffff; stroke: #1d4ed8; stroke-width: 1.6; }
+      .ev-link { fill: #ffffff; stroke: #4b5563; stroke-width: 1.6; }
+      .flow { fill: none; stroke: #1f2937; stroke-width: 1.5; marker-end: url(#arrow); }
+      .msgflow { fill: none; stroke: #6b7280; stroke-width: 1.3; stroke-dasharray: 6 4; marker-end: url(#msg); }
+      .t { fill: #111827; }
+      .lbl { fill: #374151; font-size: 11.5px; }
+      .small { fill: #4b5563; font-size: 11px; }
+      .note { fill: #fffbeb; stroke: #d97706; stroke-width: 1; }
+      .group { fill: none; stroke: #6b7280; stroke-width: 1.4; stroke-dasharray: 8 5; rx: 14; }
+    </style>
+  </defs>
+
+  <text x="24" y="28" font-size="18" font-weight="700" fill="#111827">ERP AI · fluxo dos agentes no LangGraph e execução no HCM (BPMN)</text>
+  <text x="24" y="46" class="small">Legenda: azul = pausa esperando pessoa · laranja = agente de IA · verde = chamada ao HCM Lab · amarelo = decisão por código · círculos duplos pequenos com letra = ligação (continua no ponto de mesma letra)</text>
+
+  <!-- Pool / lanes -->
+  <rect x="24" y="60" width="2012" height="790" class="lane"/>
+  <rect x="24" y="60" width="2012" height="150" class="lane"/>
+  <rect x="24" y="210" width="2012" height="330" class="lane"/>
+  <rect x="24" y="540" width="2012" height="150" class="lane"/>
+  <rect x="24" y="690" width="2012" height="160" class="lane"/>
+  <rect x="24" y="60" width="34" height="790" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1.2"/>
+  <text transform="translate(46,135) rotate(-90)" text-anchor="middle" class="lane-title">Usuário / Consultor</text>
+  <text transform="translate(46,375) rotate(-90)" text-anchor="middle" class="lane-title">ERP AI · grafo LangGraph (código)</text>
+  <text transform="translate(46,615) rotate(-90)" text-anchor="middle" class="lane-title">Agentes de IA</text>
+  <text transform="translate(46,770) rotate(-90)" text-anchor="middle" class="lane-title">HCM Lab · API v2</text>
+
+  <!-- ===== Usuário lane ===== -->
+  <circle cx="130" cy="135" r="18" class="ev-start"/>
+  <text x="130" y="178" text-anchor="middle" class="t">Pedido em</text><text x="130" y="192" text-anchor="middle" class="t">linguagem natural</text>
+
+  <circle cx="470" cy="135" r="18" class="ev-end"/>
+  <text x="470" y="178" text-anchor="middle" class="t">Aviso: fora do escopo</text><text x="470" y="192" text-anchor="middle" class="small">sem HCM, sem fila, sem memória</text>
+
+  <!-- clarification pause -->
+  <circle cx="820" cy="135" r="18" class="ev-pause"/><circle cx="820" cy="135" r="13" class="ev-pause"/>
+  <text x="820" y="100" text-anchor="middle" class="t">Pausa: esclarecer empresa</text>
+  <circle cx="900" cy="135" r="12" class="ev-link"/><text x="900" y="139" text-anchor="middle" font-size="11" class="t">R</text>
+  <text x="900" y="166" text-anchor="middle" class="small">resposta</text>
+  <circle cx="740" cy="135" r="12" class="ev-link"/><text x="740" y="139" text-anchor="middle" font-size="11" class="t">C</text>
+  <text x="740" y="166" text-anchor="middle" class="small">enviar a Não tratados</text>
+  <path class="flow" d="M838,135 L888,135"/>
+  <path class="flow" d="M802,135 L752,135"/>
+
+  <!-- choice pause -->
+  <circle cx="1400" cy="135" r="18" class="ev-pause"/><circle cx="1400" cy="135" r="13" class="ev-pause"/>
+  <text x="1400" y="100" text-anchor="middle" class="t">Pausa: escolher 1 de 3 interpretações</text>
+  <polygon points="1500,110 1525,135 1500,160 1475,135" class="gw"/>
+  <text x="1500" y="92" text-anchor="middle" class="lbl">Escolha?</text>
+  <path class="flow" d="M1418,135 L1473,135"/>
+  <circle cx="1585" cy="110" r="12" class="ev-link"/><text x="1585" y="114" text-anchor="middle" font-size="11" class="t">R</text>
+  <text x="1600" y="113" class="small">nenhuma, 1ª vez: reanálise, modelo forte</text>
+  <circle cx="1585" cy="160" r="12" class="ev-link"/><text x="1585" y="164" text-anchor="middle" font-size="11" class="t">C</text>
+  <text x="1600" y="163" class="small">nenhuma, 2ª vez</text>
+  <path class="flow" d="M1525,135 L1550,135 L1550,110 L1573,110"/>
+  <path class="flow" d="M1550,135 L1550,160 L1573,160"/>
+  <text x="1512" y="195" text-anchor="middle" class="small">escolheu uma</text>
+  <path class="flow" d="M1500,160 L1500,445"/>
+
+  <!-- consultant pause (catch link C) -->
+  <circle cx="1800" cy="135" r="12" class="ev-link"/><text x="1800" y="139" text-anchor="middle" font-size="11" class="t">C</text>
+  <circle cx="1855" cy="135" r="18" class="ev-pause"/><circle cx="1855" cy="135" r="13" class="ev-pause"/>
+  <text x="1855" y="100" text-anchor="middle" class="t">Pausa: consultor</text>
+  <text x="1855" y="86" text-anchor="middle" class="small">fila Não tratados</text>
+  <path class="flow" d="M1812,135 L1837,135"/>
+  <polygon points="1925,110 1950,135 1925,160 1900,135" class="gw"/>
+  <path class="flow" d="M1873,135 L1898,135"/>
+  <circle cx="1925" cy="195" r="14" class="ev-end"/>
+  <text x="1948" y="200" text-anchor="start" class="small">Concluído</text>
+  <path class="flow" d="M1925,160 L1925,181"/>
+  <text x="1932" y="172" class="small">encerrar</text>
+  <circle cx="1925" cy="75" r="12" class="ev-link"/><text x="1925" y="79" text-anchor="middle" font-size="11" class="t">R</text>
+  <path class="flow" d="M1925,110 L1925,87"/>
+  <text x="1942" y="72" class="small">interpretação</text>
+  <text x="1942" y="85" class="small">do especialista:</text>
+  <text x="1942" y="98" class="small">reinicia e pula</text>
+  <text x="1942" y="111" class="small">o intérprete</text>
+
+  <!-- ===== ERP lane, row A (y 240-300) ===== -->
+  <circle cx="110" cy="270" r="12" class="ev-link"/><text x="110" y="274" text-anchor="middle" font-size="11" class="t">R</text>
+  <text x="110" y="300" text-anchor="middle" class="small">reinício</text>
+  <path class="flow" d="M130,135 L130,215 L130,240"/>
+  <path class="flow" d="M122,270 L158,270"/>
+
+  <rect x="160" y="240" width="130" height="60" class="task"/>
+  <text x="225" y="265" text-anchor="middle" class="t">Guarda rápida</text><text x="225" y="281" text-anchor="middle" class="small">padrões de ataque, cálculos</text>
+  <path class="flow" d="M290,270 L318,270"/>
+  <polygon points="345,245 370,270 345,295 320,270" class="gw"/>
+  <text x="345" y="315" text-anchor="middle" class="lbl">fora do escopo?</text>
+  <path class="flow" d="M345,245 L345,200 L452,200 L452,153"/>
+  <text x="360" y="222" class="small">sim</text>
+  <!-- to classifier -->
+  <path class="flow" d="M370,270 L440,270 L440,565"/>
+  <text x="378" y="262" class="small">não</text>
+  <!-- from classifier up to gateway 2 -->
+  <path class="flow" d="M560,565 L560,295"/>
+  <polygon points="560,245 585,270 560,295 535,270" class="gw"/>
+  <text x="560" y="315" text-anchor="middle" class="lbl">escopo?</text>
+  <path class="flow" d="M560,245 L560,200 L488,200 L488,153"/>
+  <text x="520" y="222" class="small">fora</text>
+  <path class="flow" d="M585,270 L628,270"/>
+  <text x="590" y="262" class="small">parametrização</text>
+
+  <rect x="630" y="240" width="140" height="60" class="task"/>
+  <text x="700" y="265" text-anchor="middle" class="t">Buscar empresa</text><text x="700" y="281" text-anchor="middle" class="small">nome fantasia / razão social</text>
+  <path class="flow" d="M770,270 L808,270"/>
+  <polygon points="835,245 860,270 835,295 810,270" class="gw"/>
+  <text x="835" y="315" text-anchor="middle" class="lbl">uma só empresa?</text>
+  <path class="flow" d="M835,245 L835,153"/>
+  <text x="842" y="200" class="small">não: ausente, não achada ou homônimas</text>
+  <path class="flow" d="M860,270 L898,270"/>
+  <text x="866" y="262" class="small">sim</text>
+
+  <rect x="900" y="240" width="160" height="60" class="task"/>
+  <text x="980" y="259" text-anchor="middle" class="t">Contexto</text><text x="980" y="274" text-anchor="middle" class="small">catálogo, foto da empresa,</text><text x="980" y="288" text-anchor="middle" class="small">hash de contrato</text>
+  <path class="flow" d="M1060,270 L1098,270"/>
+  <polygon points="1125,245 1150,270 1125,295 1100,270" class="gw"/>
+  <text x="1125" y="315" text-anchor="middle" class="lbl">conector?</text>
+  <circle cx="1125" cy="215" r="12" class="ev-link"/><text x="1125" y="219" text-anchor="middle" font-size="11" class="t">C</text>
+  <path class="flow" d="M1125,245 L1125,227"/>
+  <text x="1140" y="226" class="small">módulo "outros" ou sem catálogo</text>
+  <path class="flow" d="M1150,270 L1168,270"/>
+  <text x="1156" y="262" class="small">sim</text>
+
+  <rect x="1170" y="240" width="120" height="60" class="task"/>
+  <text x="1230" y="259" text-anchor="middle" class="t">Recuperar memória</text><text x="1230" y="274" text-anchor="middle" class="small">casos, experiência</text><text x="1230" y="288" text-anchor="middle" class="small">redigida, lições</text>
+  <!-- to interpreter and back -->
+  <path class="flow" d="M1215,300 L1215,565"/>
+  <path class="flow" d="M1320,565 L1320,295"/>
+  <polygon points="1320,245 1345,270 1320,295 1295,270" class="gw"/>
+  <text x="1320" y="315" text-anchor="middle" class="lbl">alguma suportada?</text>
+  <circle cx="1420" cy="215" r="12" class="ev-link"/><text x="1420" y="219" text-anchor="middle" font-size="11" class="t">C</text>
+  <path class="flow" d="M1345,270 L1420,270 L1420,227"/>
+  <text x="1436" y="226" class="small">nenhuma: lacunas estruturadas</text>
+  <path class="flow" d="M1320,245 L1320,200 L1400,200 L1400,153"/>
+  <text x="1326" y="222" class="small">sim</text>
+
+  <!-- ===== ERP lane, row B (y 440-500), right to left ===== -->
+  <rect x="1420" y="440" width="160" height="60" class="task"/>
+  <text x="1500" y="465" text-anchor="middle" class="t">Memória de intenção</text><text x="1500" y="481" text-anchor="middle" class="small">por consultor, empresa, módulo, contrato</text>
+  <path class="flow" d="M1420,470 L1385,470"/>
+  <polygon points="1360,445 1385,470 1360,495 1335,470" class="gw"/>
+  <text x="1360" y="518" text-anchor="middle" class="lbl">suportada por inteiro?</text>
+  <circle cx="1360" cy="400" r="12" class="ev-link"/><text x="1360" y="404" text-anchor="middle" font-size="11" class="t">C</text>
+  <path class="flow" d="M1360,445 L1360,412"/>
+  <text x="1375" y="420" class="small">parcial: capacidade ausente</text>
+  <!-- to planner (agents lane) -->
+  <path class="flow" d="M1335,470 L1060,470 L1060,565"/>
+  <text x="1230" y="462" class="small">sim</text>
+  <!-- back from planner -->
+  <path class="flow" d="M940,565 L940,500"/>
+  <rect x="820" y="440" width="180" height="60" class="task"/>
+  <text x="910" y="459" text-anchor="middle" class="t">Validar plano</text><text x="910" y="474" text-anchor="middle" class="small">esquemas do catálogo, escopos,</text><text x="910" y="488" text-anchor="middle" class="small">regra base, validador do HCM</text>
+  <path class="flow" d="M820,470 L775,470"/>
+  <polygon points="750,445 775,470 750,495 725,470" class="gw"/>
+  <text x="750" y="518" text-anchor="middle" class="lbl">válido?</text>
+  <!-- repair loop -->
+  <path class="flow" d="M750,495 L750,530 L1000,530 L1000,568"/>
+  <text x="760" y="528" class="small">não, 1ª vez: volta ao planejador com o erro (reparo)</text>
+  <circle cx="750" cy="400" r="12" class="ev-link"/><text x="750" y="404" text-anchor="middle" font-size="11" class="t">C</text>
+  <path class="flow" d="M750,445 L750,412"/>
+  <text x="765" y="420" class="small">não, 2ª vez, ou plano com perguntas</text>
+  <path class="flow" d="M725,470 L660,470"/>
+  <text x="690" y="462" class="small">sim</text>
+  <circle cx="640" cy="470" r="18" class="ev-end"/>
+  <text x="640" y="508" text-anchor="middle" class="t">Fim do grafo:</text><text x="640" y="522" text-anchor="middle" class="t">plano em revisão</text>
+
+  <!-- error note -->
+  <rect x="1420" y="565" width="440" height="118" class="note"/>
+  <text x="1440" y="587" class="t" font-weight="700">Erro técnico em qualquer estação</text>
+  <text x="1440" y="605" class="small">Timeout do modelo, HCM fora, exceção: o atendimento fica em "Retomar fluxo".</text>
+  <text x="1440" y="621" class="small">Retomar reabre o mesmo checkpoint e continua da estação que falhou,</text>
+  <text x="1440" y="637" class="small">sem repetir chamadas de IA já feitas nem a escolha do usuário.</text>
+  <text x="1440" y="659" class="small">Modo especialista: após o classificador, o fluxo vai direto a Contexto e</text>
+  <text x="1440" y="675" class="small">Planejador, pulando a busca de empresa e as três interpretações.</text>
+
+  <!-- ===== Agents lane ===== -->
+  <rect x="350" y="570" width="240" height="70" class="task-ai"/>
+  <text x="470" y="590" text-anchor="middle" class="t" font-weight="700">1. Classificador</text>
+  <text x="470" y="606" text-anchor="middle" class="small">módulo (lista do HCM), empresa citada,</text>
+  <text x="470" y="620" text-anchor="middle" class="small">escopo: parametrização / esclarecimento / fora</text>
+  <text x="362" y="636" class="small">IA</text>
+
+  <rect x="1160" y="570" width="240" height="70" class="task-ai"/>
+  <text x="1280" y="590" text-anchor="middle" class="t" font-weight="700">2. Intérprete</text>
+  <text x="1280" y="606" text-anchor="middle" class="small">3 interpretações distintas, nível a alterar,</text>
+  <text x="1280" y="620" text-anchor="middle" class="small">suporte e lacunas estruturadas</text>
+  <text x="1172" y="636" class="small">IA</text>
+
+  <rect x="840" y="570" width="240" height="70" class="task-ai"/>
+  <text x="960" y="590" text-anchor="middle" class="t" font-weight="700">3. Planejador</text>
+  <text x="960" y="606" text-anchor="middle" class="small">parâmetros, escopos e valores conforme</text>
+  <text x="960" y="620" text-anchor="middle" class="small">esquema do catálogo; testes; 1 reparo</text>
+  <text x="852" y="636" class="small">IA</text>
+
+  <!-- ===== HCM lane ===== -->
+  <rect x="630" y="720" width="140" height="60" class="task-hcm"/>
+  <text x="700" y="745" text-anchor="middle" class="t">Cadastro de empresas</text><text x="700" y="761" text-anchor="middle" class="small">busca sem acento, homônimos</text>
+  <path class="msgflow" d="M700,300 L700,718"/>
+  <rect x="900" y="720" width="160" height="60" class="task-hcm"/>
+  <text x="980" y="740" text-anchor="middle" class="t">Catálogo e snapshot v2</text><text x="980" y="755" text-anchor="middle" class="small">campos com esquema, escopos, precedência,</text><text x="980" y="769" text-anchor="middle" class="small">nomeadas, atribuições, hash</text>
+  <path class="msgflow" d="M980,300 L980,718"/>
+  <rect x="830" y="800" width="160" height="40" class="task-hcm"/>
+  <text x="910" y="825" text-anchor="middle" class="t">Validar plano (sem gravar)</text>
+  <path class="msgflow" d="M910,500 L910,545 L800,545 L800,820 L828,820"/>
+  <text x="1130" y="830" class="small">Lista de módulos com descrição também vem do HCM, a cada fluxo, para o classificador.</text>
+
+  <!-- ===== Execution band (outside the graph) ===== -->
+  <rect x="24" y="870" width="2012" height="250" class="group"/>
+  <text x="44" y="892" class="t" font-weight="700">Fora do LangGraph: aprovação e execução. Nenhuma estação do grafo escreve no HCM.</text>
+  <path class="flow" d="M640,488 L640,540 L605,540 L605,860 L120,860 L120,930"/>
+  <text x="130" y="880" class="small">plano em revisão</text>
+
+  <rect x="60" y="930" width="170" height="60" class="task-user"/>
+  <text x="145" y="952" text-anchor="middle" class="t">Aprovar e aplicar</text><text x="145" y="968" text-anchor="middle" class="small">hash do plano exato + foto</text>
+  <path class="flow" d="M230,960 L268,960"/>
+  <rect x="270" y="930" width="230" height="60" class="task-hcm"/>
+  <text x="385" y="950" text-anchor="middle" class="t">HCM: aplicar numa transação</text><text x="385" y="965" text-anchor="middle" class="small">confere hash e foto, grava versões, roda testes</text><text x="385" y="979" text-anchor="middle" class="small">sintéticos; operação idempotente por UUID</text>
+  <path class="flow" d="M500,960 L538,960"/>
+  <polygon points="565,935 590,960 565,985 540,960" class="gw"/>
+  <text x="565" y="1008" text-anchor="middle" class="lbl">testes passaram?</text>
+  <circle cx="565" cy="1065" r="14" class="ev-end"/>
+  <path class="flow" d="M565,985 L565,1051"/>
+  <text x="585" y="1060" class="small">falha: transação desfeita,</text><text x="585" y="1074" class="small">nada gravado, vai a Não tratados</text>
+  <path class="flow" d="M590,960 L648,960"/>
+  <text x="598" y="952" class="small">sim</text>
+  <rect x="650" y="930" width="180" height="60" class="task"/>
+  <text x="740" y="952" text-anchor="middle" class="t">Verificar resultado</text><text x="740" y="968" text-anchor="middle" class="small">foto depois = plano; produção intocada</text>
+  <path class="flow" d="M830,960 L868,960"/>
+  <rect x="870" y="930" width="170" height="60" class="task-user"/>
+  <text x="955" y="952" text-anchor="middle" class="t">Confirmar resultado</text><text x="955" y="968" text-anchor="middle" class="small">atende ao pedido de negócio?</text>
+  <path class="flow" d="M1040,960 L1098,960"/>
+  <circle cx="1118" cy="960" r="18" class="ev-end"/>
+  <text x="1118" y="998" text-anchor="middle" class="t">Caso validado</text><text x="1118" y="1012" text-anchor="middle" class="small">entra na memória aprovada</text>
+  <path class="flow" d="M955,990 L955,1040 L1218,1040 L1218,990"/>
+  <text x="1000" y="1032" class="small">ou reverter</text>
+  <rect x="1160" y="930" width="220" height="60" class="task-hcm"/>
+  <text x="1270" y="952" text-anchor="middle" class="t">Reverter (opcional)</text><text x="1270" y="968" text-anchor="middle" class="small">só se nada mudou depois; retira as versões</text><text x="1270" y="982" text-anchor="middle" class="small">criadas; caso sai da memória aprovada</text>
+  <path class="flow" d="M1380,960 L1428,960"/>
+  <circle cx="1448" cy="960" r="18" class="ev-end"/>
+  <text x="1448" y="998" text-anchor="middle" class="t">Revertido</text>
+  <text x="1520" y="950" class="small">Antes da aplicação, o usuário pode refazer o pedido: cria um</text>
+  <text x="1520" y="966" class="small">fluxo novo, desativa a memória de intenção anterior e recomeça em R.</text>
+  <text x="1520" y="990" class="small">Métricas, lições e lacunas são gravadas ao longo de todo o caminho.</text>
+</svg>
