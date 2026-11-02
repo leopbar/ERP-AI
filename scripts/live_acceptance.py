@@ -27,6 +27,7 @@ test_config = {**config, "model": "gpt-6-luna", "max_completion_tokens": 4096}
 provider.read_config = lambda: test_config
 lines = (root / ".local-access.txt").read_text(encoding="utf-8").splitlines()
 password = next(line.split(": ", 1)[1] for line in lines if line.startswith("Senha:"))
+username = next((line.split(": ", 1)[1] for line in lines if line.startswith("Usuário:")), "consultor")
 case_id = None
 report = {"model": "gpt-6-luna", "production_changed": False, "technical_case_not_training_data": True}
 with httpx.Client(base_url="http://localhost:3001", headers={"Origin": "http://localhost:3001"}, timeout=60) as client:
@@ -34,7 +35,7 @@ with httpx.Client(base_url="http://localhost:3001", headers={"Origin": "http://l
         response = client.post("/api" + path, json=payload) if payload is not None else client.get("/api" + path)
         response.raise_for_status()
         return response.json()
-    call("/login", {"username": "consultor", "password": password})
+    call("/login", {"username": username, "password": password})
     connection = call("/connection?company_code=EMP001")
     baseline = connection["snapshot"]
     current = baseline["effective"]["homologation"][0]["configuration"]["min_advance_days"]

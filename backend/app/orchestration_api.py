@@ -89,6 +89,9 @@ def project(db, row, graph, config, user, error=None):
     for note in state.get("repair_notes", [])[len(previous.get("repair_notes", [])):]:
         record_lesson(db, row, "validator_rejection", "Pedido: " + row.request[:300] + " | Rejeição do validador: " + str(note))
     data["repair_notes"] = state.get("repair_notes", [])
+    data["redirects"] = state.get("redirects", [])
+    if state.get("redirects") and len(state["redirects"]) > len(previous.get("redirects", [])):
+        event(row, "module_redirected", user, from_module=state["redirects"][-1], to_module=state.get("module"), reason=(state.get("classification") or {}).get("redirect_reason", ""))
     if phase == "consultant" and previous.get("phase") != "consultant" and data["category"] in ("validation_failed", "plan_questions"):
         record_lesson(db, row, data["category"], "Pedido: " + row.request[:300] + " | " + str(data["reason"]))
     if phase == "review" and previous.get("phase") != "review":

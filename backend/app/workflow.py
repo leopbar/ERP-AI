@@ -17,6 +17,24 @@ def fingerprint(snapshot):
     """Contract v2 snapshots carry their own fingerprint; v1 snapshots kept in old cases are recomputed."""
     return snapshot.get("fingerprint") or digest({key: snapshot.get(key) for key in LEGACY_KEYS})
 
+def homologation_fingerprint(snapshot):
+    """What must stay as tested before a result is approved: homologation rules and assignments, groups and company.
+    Production is checked separately, because a human publication of the same rules is a legitimate later step."""
+    return digest({"schedules": (snapshot.get("schedules") or {}).get("homologation"), "assignments": (snapshot.get("assignments") or {}).get("homologation"),
+                   "groups": snapshot.get("groups"), "company": snapshot.get("company"), "as_of": snapshot.get("as_of"), "catalog_version": snapshot.get("catalog_version")})
+
+def row_identity(row, fields):
+    return json.dumps({"scope_key": row.get("scope_key"), "effective_from": row.get("effective_from"), **{name: row.get(name) for name in fields}, **{name: row.get(name) for name in NAMED_FIELDS if name in row}}, sort_keys=True)
+
+def publication_consistent(initial, current, fields):
+    """Production changed only by rows that exist, with the same values, in current homologation: the HCM publication flow."""
+    before = {row_identity(row, fields) for row in initial["schedules"]["production"]}
+    homologation = {row_identity(row, fields) for row in current["schedules"]["homologation"]}
+    new_rows = [row for row in current["schedules"]["production"] if row_identity(row, fields) not in before]
+    removed = before - {row_identity(row, fields) for row in current["schedules"]["production"]}
+    assignments_ok = assignment_values(current, "production") in (assignment_values(initial, "production"), assignment_values(current, "homologation"))
+    return bool(new_rows or removed) and not removed and all(row_identity(row, fields) in homologation for row in new_rows) and assignments_ok
+
 def approval_hash(snapshot, payloads, assignments=None):
     return digest({"expected_fingerprint": fingerprint(snapshot), "configurations": payloads, "assignments": assignments})
 
@@ -181,6 +199,8 @@ def compare_result(initial, current, payloads, catalog, assignments=None):
     expected_assignments = assignments if assignments is not None else assignment_values(initial)
     assignments_match = assignment_values(current) == expected_assignments if (named or assignments is not None) else True
     differences = [{"scope": key[0], "effective_from": key[1], "expected": expected.get(key), "actual": actual.get(key)} for key in sorted(set(expected) | set(actual)) if expected.get(key) != actual.get(key)]
+    production_published = (not production_unchanged) and publication_consistent(initial, current, fields)
     return {"configuration_matches": not differences and assignments_match, "assignments_match": assignments_match, "production_unchanged": production_unchanged,
+            "production_published": production_published,
             "differences": differences, "consulted_at": current["consulted_at"],
             "evidence_origin": "API HCM; testes funcionais dependem de declaração do consultor", "snapshot": current}

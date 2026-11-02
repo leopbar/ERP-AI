@@ -5,14 +5,15 @@ import httpx
 root = Path(__file__).resolve().parents[1]
 access = (root / ".local-access.txt").read_text(encoding="utf-8").splitlines()
 password = next(line.split(": ", 1)[1] for line in access if line.startswith("Senha:"))
+username = next((line.split(": ", 1)[1] for line in access if line.startswith("Usuário:")), "consultor")
 with httpx.Client(base_url="http://localhost:3001", headers={"Origin": "http://localhost:3001"}, timeout=30) as client:
     def call(path, payload=None):
         response = client.post("/api" + path, json=payload) if payload is not None else client.get("/api" + path)
         response.raise_for_status()
         return response.json()
-    call("/login", {"username": "consultor", "password": password})
+    call("/login", {"username": username, "password": password})
     profile = call("/me")
-    assert profile["username"] == "consultor"
+    assert profile["username"] == username
     assert not profile["model_configured"], "Smoke requires an unconfigured provider; no model calls will be made."
     connection = call("/connection?company_code=EMP001")
     baseline = connection["snapshot"]["schedules"]

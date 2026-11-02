@@ -4,6 +4,7 @@ import copy
 import json
 from test_workflow import setup, PROPOSAL  # noqa: F401
 from test_orchestration import agents, post, start, options, OPTIONS  # noqa: F401
+from test_workflow import FakeHCM
 from app import orchestration as flow
 from app.contracts import Proposal
 from app.model_catalog import supports_reasoning_effort
@@ -98,3 +99,42 @@ def test_unsupported_choice_hands_structured_capabilities_to_the_queue(agents):
     row = post(client, options(client, start(client)), action="choose", choice="2")
     assert row["status"] == "consultant_queue" and row["workflow"]["category"] == "missing_capability"
     assert row["workflow"]["capabilities"] == [{"module": "vacations", "description": "Antecedência máxima para solicitação."}]
+
+
+def test_interpreter_redirects_to_the_module_that_has_the_capability(agents, monkeypatch):
+    """Classifier picks vacation_policy for 'não permitir parcelamento'; the interpreter finds nothing there and names vacations."""
+    client, fake, factory, calls = agents
+    fake.modules = lambda: [*FakeHCM.modules(fake), {"id": "vacation_policy", "label": "Férias / aviso e abono", "description": "Abono, regras CLT, aviso.", "scopes": ["company"]}]
+    base_catalog = fake.catalog
+    def catalog_for(module):
+        data = base_catalog()
+        if fake.current != "vacations":
+            data.update(module=fake.current, version=fake.current + "-2", fields=[{"id": "cash_bonus_allowed", "label": "Abono", "type": "boolean", "schema": {"type": "boolean"}}], scopes=[{"type": "company"}])
+        return data
+    fake.current = "vacations"
+    def for_module(module):
+        fake.current = module
+        return fake
+    monkeypatch.setattr(fake, "for_module", for_module)
+    monkeypatch.setattr(fake, "catalog", lambda: catalog_for(fake.current))
+    original = flow.provider.completion
+    def completion(*args, **kwargs):
+        value, metrics = original(*args, **kwargs)
+        payload = json.loads(args[1][-1]["content"])
+        if kwargs["name"] == "module_classifier":
+            value["module"] = "vacation_policy"
+        elif kwargs["name"] == "interpretation_agent" and payload["module"] == "Férias / aviso e abono":
+            assert any(item["id"] == "vacations" for item in payload["modules"]) and payload["already_redirected_from"] == []
+            for option in value["options"]:
+                option["support"] = "unsupported"; option["missing_capabilities"] = [{"module": "vacations", "description": "Proibir parcelamento."}]
+            value["suggested_module"] = "vacations"
+        return value, metrics
+    monkeypatch.setattr(flow.provider, "completion", completion)
+    row = client.post("/api/cases", json={"request": "Não permitir parcelamento de férias para funcionários da empresa ABC.", "effective_from": "2026-10-31"}).json()
+    row = post(client, row, "orchestrate")
+    assert row["status"] == "awaiting_interpretation", row["workflow"].get("reason")
+    assert row["workflow"]["module"] == "vacations" and row["module"] == "vacations" and row["workflow"]["redirects"] == ["vacation_policy"]
+    assert row["workflow"]["classification"]["redirected_to"] == "vacations"
+    assert [m["role"] for m in row["workflow"]["metrics"]] == ["module_classifier", "interpretation_agent", "interpretation_agent"]
+    assert any(e["type"] == "module_redirected" and e["from_module"] == "vacation_policy" and e["to_module"] == "vacations" for e in row["events"])
+    assert row["snapshot"]["catalog_version"] == "vacations-2"

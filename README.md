@@ -14,6 +14,10 @@ Sistema independente, conectado ao HCM Lab por API. A parametrização dos módu
 
 O menu **Como usar** explica o fluxo dentro do aplicativo. Se um atendimento antigo foi criado antes da execução automática e o HCM já mudou, faça nova análise; não tente aplicar uma proposta antiga sobre dados novos.
 
+## Regras de construção
+
+**O HCM não é alterado.** É um sistema pronto e em funcionamento que oferece ao ERP AI apenas uma API de comunicação. Toda limitação se resolve do lado do ERP: cliente, agentes, validação, interface ou documentação. O que a API não oferece vira registro em Não tratados, nunca mudança no HCM. Isso vale como se o HCM fosse o produto de um fornecedor, porque é assim que o ERP AI precisa funcionar na prática. As demais regras estão em `CLAUDE.md`.
+
 ## Contrato de integração v2
 
 O ERP AI conversa com o HCM por `/api/integration/v2`. O catálogo de cada módulo traz os campos com JSON Schema, os escopos disponíveis, a precedência das regras e um `contract_hash`. Esse hash fica gravado em cada atendimento e em cada memória de interpretação: se o HCM mudar o significado de um campo ou a precedência, mesmo sem trocar a versão do catálogo, o ERP bloqueia aceites e execuções do atendimento antigo e deixa suas memórias fora da recuperação automática.

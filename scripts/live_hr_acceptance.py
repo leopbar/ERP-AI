@@ -12,6 +12,7 @@ args=parser.parse_args()
 if not args.execute: raise SystemExit("Use --execute para o teste reversível em homologação.")
 root=Path(__file__).resolve().parents[1]
 password=next(line.split(": ",1)[1] for line in (root/".local-access.txt").read_text(encoding="utf-8").splitlines() if line.startswith("Senha:"))
+username=next((line.split(": ",1)[1] for line in (root/".local-access.txt").read_text(encoding="utf-8").splitlines() if line.startswith("Usuário:")),"consultor")
 report={"passed":False,"module":"timekeeping","provider":"real"}
 case_id=None
 with httpx.Client(base_url="http://localhost:3001",headers={"Origin":"http://localhost:3001"},timeout=240) as client:
@@ -21,7 +22,7 @@ with httpx.Client(base_url="http://localhost:3001",headers={"Origin":"http://loc
         return r.json()
     def action(row,endpoint,**kwargs):
         return call(f"/cases/{row['id']}/{endpoint}",{"revision":row["revision"],**kwargs})
-    call("/login",{"username":"consultor","password":password})
+    call("/login",{"username":username,"password":password})
     matches=call("/companies?query="+quote(args.company_query))["items"]
     assert len(matches)==1
     company=matches[0]

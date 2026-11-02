@@ -7,7 +7,7 @@ from app.contracts import Action, ApplyAction
 from app.database import get_db
 from app.hcm import get_hcm
 from app.main import app, load, output, event, save, fresh
-from app.workflow import approval_hash, case_catalog, fingerprint, compare_result
+from app.workflow import approval_hash, case_catalog, fingerprint, compare_result, homologation_fingerprint, publication_consistent
 
 def collect_result(row, operation):
     result = compare_result(row.snapshot, operation["after_snapshot"], row.proposal["payloads"], case_catalog(row), row.proposal.get("assignments"))
@@ -58,21 +58,36 @@ def verify(case_id: int, payload: Action, db: Session = Depends(get_db), user=De
     result = collect_result(row, operation)
     result["execution_request"] = row.result["execution_request"]
     row.result = result
-    row.status = "applied" if response["report"]["passed"] else "verification_failed"
-    event(row, "automatic_tests", user, report=response["report"])
+    report = response["report"]
+    # A later publication of the same rules to production by the HCM flow is not a verification failure.
+    only_production = all(check.get("passed") or str(check.get("name", "")).startswith("Produção") for check in report.get("checks", []))
+    passed = bool(report["passed"] or (result.get("production_published") and only_production and result["configuration_matches"]))
+    result["automatic_tests"] = {**report, "passed": passed, "hcm_passed": report["passed"], "production_published": bool(result.get("production_published"))}
+    row.status = "applied" if passed else "verification_failed"
+    event(row, "automatic_tests", user, report=report, production_published=result.get("production_published", False))
     save(db)
     return output(row)
 
 @app.post("/api/cases/{case_id}/confirm-result")
 def confirm(case_id: int, payload: Action, db: Session = Depends(get_db), user=Depends(require_user), hcm=Depends(get_hcm)):
     row = load(db, case_id, payload.revision)
-    if row.status != "applied" or not row.result.get("automatic_tests", {}).get("passed"):
+    tests = row.result.get("automatic_tests") or {}
+    if row.status != "applied" or not (tests.get("passed") or (row.result.get("production_published") and row.result.get("configuration_matches"))):
         raise HTTPException(409, "Os testes automáticos devem passar antes da aprovação do resultado")
-    if fingerprint(hcm.snapshot(row.effective_from, row.company_code)) != fingerprint(row.result["snapshot"]):
-        raise HTTPException(409, "O HCM mudou após os testes. Execute a verificação novamente.")
+    current = hcm.snapshot(row.effective_from, row.company_code)
+    tested = row.result["snapshot"]
+    if homologation_fingerprint(current) != homologation_fingerprint(tested):
+        raise HTTPException(409, "A homologação mudou após os testes. Execute a verificação novamente.")
+    published = False
+    if current["schedules"]["production"] != tested["schedules"]["production"]:
+        fields = [field["id"] for field in case_catalog(row)["fields"]]
+        if not publication_consistent(tested, current, fields):
+            raise HTTPException(409, "A produção mudou de forma diferente da homologação aplicada. Confira no HCM antes de aprovar.")
+        published = True
+        row.result = {**row.result, "production_published": True}
     row.status = "validated"
     event(row, "validated", user, comment=payload.comment or "Resultado conferido e aprovado pelo especialista.",
-          evidence_origin="Testes automáticos do HCM e aprovação humana", report=row.result["automatic_tests"])
+          evidence_origin="Testes automáticos do HCM e aprovação humana", report=row.result["automatic_tests"], production_published=published)
     save(db)
     return output(row)
 

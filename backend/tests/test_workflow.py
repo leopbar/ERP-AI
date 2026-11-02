@@ -110,6 +110,8 @@ class FakeHCM:
                 {"id": "payroll", "label": "Folha demonstrativa", "description": "Moeda e aviso da folha demonstrativa.", "scopes": ["company"]},
                 {"id": "benefits", "label": "Benefícios", "description": "Processo e solicitação de benefícios.", "scopes": ["company"]},
                 {"id": "workflow", "label": "Fluxos de aprovação e SLA", "description": "Etapas de aprovação e prazos de todos os processos.", "scopes": ["company"]}]
+    def module_parameters(self, module):
+        return [field["label"] for field in CATALOG["fields"]] if module == "vacations" else []
     def snapshot(self, as_of, company_code):
         assert company_code == self.data["company"]["code"]
         snapshot = resolve(self.data, str(as_of))

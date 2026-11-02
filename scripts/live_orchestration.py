@@ -22,6 +22,7 @@ artifact = root / "artifacts" / "live-orchestration.json"
 artifact.parent.mkdir(exist_ok=True)
 lines = (root / ".local-access.txt").read_text(encoding="utf-8").splitlines()
 password = next(line.split(": ", 1)[1] for line in lines if line.startswith("Senha:"))
+username = next((line.split(": ", 1)[1] for line in lines if line.startswith("Usuário:")), "consultor")
 report = json.loads(artifact.read_text(encoding="utf-8")) if args.resume else {"passed": False, "provider": "real", "model": "gpt-6-luna"}
 with httpx.Client(base_url="http://localhost:3001", headers={"Origin": "http://localhost:3001"}, timeout=150) as client:
     def call(path, payload=None):
@@ -31,7 +32,7 @@ with httpx.Client(base_url="http://localhost:3001", headers={"Origin": "http://l
         return r.json()
     def action(row, endpoint, **kwargs):
         return call(f"/cases/{row['id']}/{endpoint}", {"revision": row["revision"], **kwargs})
-    call("/login", {"username": "consultor", "password": password})
+    call("/login", {"username": username, "password": password})
     if not args.resume:
         matches = call("/companies?query=" + quote(args.company_query))["items"]
         assert len(matches) == 1, "Informe um nome de empresa sem ambiguidade para o teste."

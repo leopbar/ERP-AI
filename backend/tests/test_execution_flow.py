@@ -45,7 +45,9 @@ class Executor:
     def verify(self, operation_id):
         op = self.operations[operation_id]
         current = self.current(op)
-        return {"status": op["status"], "current_snapshot": current, "report": {"passed": current["fingerprint"] == op["after_snapshot"]["fingerprint"], "checks": []}}
+        checks = [{"name": "Parâmetros, escopos e vigências correspondem ao plano aprovado", "passed": current["schedules"]["homologation"] == op["after_snapshot"]["schedules"]["homologation"]},
+                  {"name": "Produção permanece preservada", "passed": current["schedules"]["production"] == op["after_snapshot"]["schedules"]["production"]}]
+        return {"status": op["status"], "current_snapshot": current, "report": {"passed": all(c["passed"] for c in checks), "checks": checks}}
     def rollback(self, operation_id, expected, reason):
         op = self.operations[operation_id]
         if self.current(op)["fingerprint"] != expected:
@@ -160,3 +162,34 @@ def test_invalid_model_proposal_is_audited_and_used_as_feedback(setup, monkeypat
     monkeypatch.setattr(main_module, "generate", repaired)
     response = action(client, row, "analyze")
     assert response.status_code == 200 and response.json()["status"] == "review"
+
+
+def publish(fake):
+    """What the HCM publication flow does: copy the latest homologation rows into production, same values."""
+    for row in fake.data["schedules"]["homologation"]:
+        key = (row["scope_key"], row["effective_from"], row["version"])
+        if key not in {(r["scope_key"], r["effective_from"], r["version"]) for r in fake.data["schedules"]["production"]}:
+            fake.data["schedules"]["production"].append({**row, "environment": "production", "id": 900 + row["id"]})
+
+def test_publication_to_production_after_tests_does_not_block_confirmation(setup):
+    client, fake, factory, executor, row = connected(setup)
+    row = action(client, row, "execute", approval_hash=row["approval_hash"]).json()
+    assert row["status"] == "applied"
+    publish(fake)
+    row = action(client, row, "verify").json()
+    assert row["status"] == "applied" and row["result"]["production_published"] and not row["result"]["production_unchanged"]
+    assert row["events"][-1]["production_published"] is True
+    row = action(client, row, "confirm-result").json()
+    assert row["status"] == "validated" and row["result"]["production_published"]
+    # A later change in homologation still blocks the reversal, as before.
+    fake.data["schedules"]["homologation"][-1]["min_advance_days"] += 1
+    assert action(client, row, "rollback").status_code == 409
+
+def test_unrelated_production_change_still_blocks_confirmation(setup):
+    client, fake, factory, executor, row = connected(setup)
+    row = action(client, row, "execute", approval_hash=row["approval_hash"]).json()
+    fake.data["schedules"]["production"][0]["min_advance_days"] = 99
+    response = action(client, row, "confirm-result")
+    assert response.status_code == 409 and "produção" in response.json()["detail"].lower()
+    row = action(client, row, "verify").json()
+    assert row["status"] == "verification_failed" and not row["result"].get("production_published")

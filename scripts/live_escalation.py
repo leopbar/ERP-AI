@@ -17,6 +17,7 @@ artifact.parent.mkdir(exist_ok=True)
 report = json.loads(artifact.read_text(encoding="utf-8")) if args.resume else {"passed": False}
 lines = (root / ".local-access.txt").read_text(encoding="utf-8").splitlines()
 password = next(line.split(": ", 1)[1] for line in lines if line.startswith("Senha:"))
+username = next((line.split(": ", 1)[1] for line in lines if line.startswith("Usuário:")), "consultor")
 with httpx.Client(base_url="http://localhost:3001", headers={"Origin": "http://localhost:3001"}, timeout=150) as client:
     def call(path, payload=None):
         r = client.post("/api" + path, json=payload) if payload is not None else client.get("/api" + path)
@@ -26,7 +27,7 @@ with httpx.Client(base_url="http://localhost:3001", headers={"Origin": "http://l
         return call(f"/cases/{row['id']}/{endpoint}", {"revision": row["revision"], **kwargs})
     def persist():
         artifact.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
-    call("/login", {"username": "consultor", "password": password})
+    call("/login", {"username": username, "password": password})
     if not args.resume:
         snapshot = call("/connection?company_code=EMP001")["snapshot"]
         report["baseline_schedules"] = snapshot["schedules"]

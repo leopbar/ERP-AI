@@ -9,6 +9,7 @@ from app.database import get_db
 CONTRACT = 2
 ALIASES = {"time": "timekeeping"}
 _modules_cache = {"at": 0.0, "items": None}
+_fields_cache = {}
 
 def canonical_module(module):
     """Single place where request-side aliases become HCM module identifiers."""
@@ -52,6 +53,20 @@ class HCMClient:
         if _modules_cache["items"] is None or time.monotonic() - _modules_cache["at"] > 60:
             _modules_cache.update(at=time.monotonic(), items=self.call("/modules")["items"])
         return _modules_cache["items"]
+
+    def module_parameters(self, module):
+        """Parameter labels of a module, cached: the classifier uses them to tell neighbouring modules apart
+        without the ERP knowing any HR rule. A module whose catalog cannot be read contributes an empty list."""
+        module = canonical_module(module)
+        cached = _fields_cache.get(module)
+        if cached and time.monotonic() - cached["at"] < 600:
+            return cached["labels"]
+        try:
+            labels = [field.get("label") or field["id"] for field in HCMClient(module).catalog().get("fields", [])]
+        except HTTPException:
+            labels = []
+        _fields_cache[module] = {"at": time.monotonic(), "labels": labels}
+        return labels
 
     def snapshot(self, as_of, company_code):
         if not company_code:
