@@ -19,7 +19,7 @@ from app.models import Case, now
 from app.provider import configured, generate, connection_test
 from app.model_settings import ModelSettingsInput, public_settings, save_settings, record_test, read_config
 from app.model_catalog import list_models
-from app.workflow import checked_payloads, compare_result, fingerprint, approval_hash
+from app.workflow import checked_payloads, compare_result, fingerprint, plan_entries, plans_approval_hash
 
 @asynccontextmanager
 async def lifespan(application):
@@ -52,7 +52,7 @@ def load(db, case_id, revision=None):
 
 def output(row):
     data = {column.name: getattr(row, column.name) for column in Case.__table__.columns}
-    data["approval_hash"] = approval_hash(row.snapshot, row.proposal["payloads"], row.proposal.get("assignments")) if row.snapshot and "payloads" in row.proposal else ""
+    data["approval_hash"] = plans_approval_hash(plan_entries(row))
     return data
 
 def editable(row):
@@ -62,11 +62,16 @@ def editable(row):
         raise HTTPException(409, "Consulte ou retome a execução pendente antes de iniciar outra análise")
 
 def fresh(row, hcm):
-    current = hcm.snapshot(row.effective_from, row.company_code)
-    if current.get("contract_hash", "") != (row.contract_hash or ""):
-        raise HTTPException(409, "O contrato de integração com o HCM mudou desde a análise. Analise novamente antes de aceitar.")
-    if fingerprint(current) != fingerprint(row.snapshot):
-        raise HTTPException(409, "O HCM mudou desde a análise. Analise novamente antes de aceitar.")
+    """Every module of the plan must still be as analysed: same contract and same HCM state."""
+    plans = plan_entries(row) or [{"module": row.module, "label": "", "snapshot": row.snapshot, "catalog": {"contract_hash": row.contract_hash}}]
+    for plan in plans:
+        client = hcm.for_module(plan["module"]) if hasattr(hcm, "for_module") and plan.get("module") else hcm
+        current = client.snapshot(row.effective_from, row.company_code)
+        prefix = plan["label"] + ": " if len(plans) > 1 and plan.get("label") else ""
+        if current.get("contract_hash", "") != ((plan.get("catalog") or {}).get("contract_hash") or row.contract_hash or ""):
+            raise HTTPException(409, prefix + "O contrato de integração com o HCM mudou desde a análise. Analise novamente antes de aceitar.")
+        if fingerprint(current) != fingerprint(plan["snapshot"]):
+            raise HTTPException(409, prefix + "O HCM mudou desde a análise. Analise novamente antes de aceitar.")
 
 def bind_contract(row, hcm, catalog):
     row.module = hcm.module

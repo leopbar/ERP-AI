@@ -45,11 +45,18 @@ def project(db, row, graph, config, user, error=None):
     pending = next((i.value for task in checkpoint.tasks for i in task.interrupts), None)
     phase = pending.get("phase") if pending else state.get("phase", "starting")
     previous = row.workflow or {}
+    scope = [canonical_module(state["module"])] if state.get("module") else []
+    scope += [canonical_module(m) for m in state.get("modules_in_scope", []) if canonical_module(m) not in scope]
+    labels = [module_label(state, module) for module in scope]
+    catalogs = state.get("catalogs") or ({scope[0]: state["catalog"]} if scope and state.get("catalog") else {})
     data = {**previous, "engine": "LangGraph", "phase": phase, "module": state.get("module"),
-        "module_label": module_label(state, state.get("module")) if state.get("module") else "Identificando módulo", "modules": state.get("modules", []),
+        "module_label": " + ".join(labels) if labels else "Identificando módulo", "modules": state.get("modules", []),
+        "modules_in_scope": scope, "module_labels": labels, "extensions": state.get("extensions", []),
+        "catalogs": {module: {"module_label": module_label(state, module), "version": catalog.get("version", ""), "fields": catalog.get("fields", [])} for module, catalog in catalogs.items()},
         "example": EXAMPLES.get(state.get("module"), GENERIC_EXAMPLE), "classification": state.get("classification", {}),
         "capabilities": state.get("handoff_capabilities", []),
-        "catalog_fields": state.get("catalog", {}).get("fields", []),
+        "handoff_summary": state.get("handoff_summary", {}),
+        "catalog_fields": [field for catalog in catalogs.values() for field in catalog.get("fields", [])],
         "catalog": state.get("catalog", {}),
         "scope_reason": state.get("scope_reason", ""), "scope_rejection_count": state.get("scope_rejection_count", 0),
         "clarification_count": state.get("clarification_count", 0),
@@ -92,6 +99,10 @@ def project(db, row, graph, config, user, error=None):
     data["redirects"] = state.get("redirects", [])
     if state.get("redirects") and len(state["redirects"]) > len(previous.get("redirects", [])):
         event(row, "module_redirected", user, from_module=state["redirects"][-1], to_module=state.get("module"), reason=(state.get("classification") or {}).get("redirect_reason", ""))
+    if state.get("extensions") and len(state["extensions"]) > len(previous.get("extensions", [])):
+        added = state["extensions"][len(previous.get("extensions", [])):]
+        event(row, "module_extended", user, modules=added, labels=[module_label(state, module) for module in added], scope=scope,
+              reason=(state.get("classification") or {}).get("extension_reason", ""))
     if phase == "consultant" and previous.get("phase") != "consultant" and data["category"] in ("validation_failed", "plan_questions"):
         record_lesson(db, row, data["category"], "Pedido: " + row.request[:300] + " | " + str(data["reason"]))
     if phase == "review" and previous.get("phase") != "review":

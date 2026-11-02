@@ -220,7 +220,7 @@ def test_arbitrary_company_is_used_through_plan_execution_approval_and_rollback(
     executor = Executor(fake)
     fake.apply, fake.verify, fake.rollback = executor.apply, executor.verify, executor.rollback
     row = post(client, row, "execute", approval_hash=row["approval_hash"])
-    assert row["result"]["execution_request"]["company_code"] == "234234SZDFA"
+    assert row["result"]["execution_request"]["packets"][0]["company_code"] == "234234SZDFA"
     row = post(client, row, "verify")
     row = post(client, row, "confirm-result")
     assert row["status"] == "validated"

@@ -11,8 +11,9 @@ class NewCase(StrictModel):
     company_code: str = Field(default="", max_length=20)
 
 class Change(StrictModel):
-    """One parameter value in one scope. Scope: config_code (named configuration) > group_id (group rule) > company rule.
-    The value follows the JSON Schema the HCM catalog publishes for the parameter."""
+    """One parameter value in one scope of one module. Scope: config_code (named configuration) > group_id (group rule) > company rule.
+    The value follows the JSON Schema the HCM catalog publishes for the parameter. An empty module means the case's primary module."""
+    module: str = Field(default="", max_length=40)
     group_id: int | None = None
     config_code: str | None = Field(default=None, max_length=20)
     parameter: str

@@ -68,7 +68,7 @@ def test_rejections_and_consultant_resolutions_become_lessons(agents):
 
 def test_validator_rejections_are_recorded_and_offered_to_the_interpreter(agents, monkeypatch):
     client, fake, factory, calls = agents
-    def generate(request, snapshot, sources, feedback, config=None):
+    def generate(request, snapshot, sources, feedback, config=None, **kwargs):
         invalid = copy.deepcopy(PROPOSAL); invalid["changes"][0]["value"] = 2
         return Proposal.model_validate(invalid), {"mode": "model", "model": config["model"], "usage": {}}
     monkeypatch.setattr(flow.provider, "generate", generate)

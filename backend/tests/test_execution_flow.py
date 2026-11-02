@@ -2,7 +2,7 @@ import copy
 import pytest
 from fastapi import HTTPException
 from test_workflow import setup, opened, manual, action, CATALOG, scope_key_of
-from app.workflow import fingerprint
+from app.workflow import fingerprint, approval_hash
 from app.workflow import checked_payloads
 from app.contracts import Proposal
 from test_workflow import PROPOSAL
@@ -21,6 +21,8 @@ class Executor:
         before = self.current(packet)
         if before["fingerprint"] != packet["expected_fingerprint"]:
             raise HTTPException(409, "HCM mudou")
+        if packet["approval_hash"] != approval_hash(before, packet["configurations"], packet.get("assignments")):
+            raise HTTPException(409, "O plano não corresponde à aprovação recebida")  # same check the real HCM performs per operation
         self.states[packet["operation_id"]] = copy.deepcopy(self.fake.data)
         created = []
         for item in packet["configurations"]:
@@ -87,7 +89,7 @@ def test_lost_response_resume_is_idempotent(setup):
     assert action(client, row, "execute", approval_hash=row["approval_hash"]).status_code == 502
     row = client.get(f"/api/cases/{row['id']}").json()
     assert row["status"] == "execution_unknown"
-    operation_id = row["result"]["execution_request"]["operation_id"]
+    operation_id = row["result"]["execution_request"]["packets"][0]["operation_id"]
     assert action(client, row, "review", decision="reject", comment="Não descartar execução pendente").status_code == 409
     response = action(client, row, "execute", approval_hash=row["approval_hash"])
     assert response.status_code == 200, response.text

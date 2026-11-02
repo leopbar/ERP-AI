@@ -1,9 +1,12 @@
 """Deterministic checks between the model's proposal and the HCM contract v2. Nothing here decides HR
-rules: fields, scopes, schemas and precedence come from the catalog and the snapshot."""
+rules: fields, scopes, schemas and precedence come from the catalog and the snapshot.
+A proposal may span modules: it is split into one plan per module, each checked against its own catalog,
+snapshot and HCM connector, and approved as a whole by a single hash."""
 import hashlib
 import json
 from fastapi import HTTPException
 from app.contracts import Proposal
+from app.hcm import canonical_module
 from app.schema_tools import value_errors
 
 NAMED_FIELDS = ("config_code", "name", "simulation_text")
@@ -37,6 +40,60 @@ def publication_consistent(initial, current, fields):
 
 def approval_hash(snapshot, payloads, assignments=None):
     return digest({"expected_fingerprint": fingerprint(snapshot), "configurations": payloads, "assignments": assignments})
+
+def plan_entries(row):
+    """The plans a case carries, one per module, primary first: {module, label, payloads, assignments, snapshot, catalog}.
+    Cases analysed before multi-module plans carry one implicit plan built from their single snapshot."""
+    plans = (row.proposal or {}).get("plans")
+    if plans:
+        return plans
+    if not row.snapshot or "payloads" not in (row.proposal or {}):
+        return []
+    module = row.module or "vacations"
+    return [{"module": module, "label": (row.workflow or {}).get("module_label") or module, "payloads": row.proposal["payloads"],
+             "assignments": row.proposal.get("assignments"), "snapshot": row.snapshot, "catalog": case_catalog(row)}]
+
+def plans_approval_hash(plans):
+    """One hash for the whole plan: every module's expected HCM state and its exact payloads."""
+    if not plans:
+        return ""
+    if len(plans) == 1:
+        return approval_hash(plans[0]["snapshot"], plans[0]["payloads"], plans[0].get("assignments"))
+    return digest({"plans": [{"module": plan["module"], "expected_fingerprint": fingerprint(plan["snapshot"]), "configurations": plan["payloads"],
+                              "assignments": plan.get("assignments")} for plan in plans]})
+
+def checked_plans(proposal: Proposal, catalogs, snapshots, hcm, labels=None):
+    """Splits a proposal by module and validates each part with its own catalog, snapshot and HCM connector.
+    catalogs/snapshots are dicts keyed by module, primary module first. Returns the list of plans (modules without changes are omitted)."""
+    modules = list(catalogs)
+    primary = modules[0]
+    config_module = next((module for module in modules if "config" in scope_types(catalogs[module])), None)
+    grouped = {module: [] for module in modules}
+    for change in proposal.changes:
+        module = canonical_module(change.module) if change.module else primary
+        if module not in grouped:
+            raise HTTPException(422, f"O módulo {change.module} não faz parte deste atendimento")
+        grouped[module].append(change)
+    if (proposal.named_configurations or proposal.assignments is not None) and config_module is None:
+        raise HTTPException(422, "Este módulo não possui configurações nomeadas nem atribuições")
+    plans = []
+    for module in modules:
+        part = Proposal(summary=proposal.summary, questions=proposal.questions, tests=proposal.tests, sources=proposal.sources, changes=grouped[module],
+                        named_configurations=proposal.named_configurations if module == config_module else [],
+                        assignments=proposal.assignments if module == config_module else None)
+        if not part.changes and not part.named_configurations and part.assignments is None:
+            continue
+        client = hcm.for_module(module) if hasattr(hcm, "for_module") else hcm
+        label = (labels or {}).get(module, module)
+        try:
+            payloads, assignments = checked_payloads(part, snapshots[module], catalogs[module], client)
+        except HTTPException as exc:
+            if len(modules) > 1:
+                detail = exc.detail if isinstance(exc.detail, dict) else {"message": exc.detail}
+                raise HTTPException(exc.status_code, {**detail, "module": module, "message": f"{label}: {detail.get('message', '')}"}) from exc
+            raise
+        plans.append({"module": module, "label": label, "payloads": payloads, "assignments": assignments, "snapshot": snapshots[module], "catalog": catalogs[module]})
+    return plans
 
 def catalog_fields(catalog):
     return {field["id"]: field for field in catalog["fields"]}

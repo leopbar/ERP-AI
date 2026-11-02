@@ -47,7 +47,7 @@ def test_module_outside_the_hcm_list_is_a_contract_error(agents, monkeypatch):
 def test_rejected_plan_gets_one_automatic_repair_before_the_consultant(agents, monkeypatch):
     client, fake, _, calls = agents
     attempts = []
-    def generate(request, snapshot, sources, feedback, config=None):
+    def generate(request, snapshot, sources, feedback, config=None, **kwargs):
         attempts.append(feedback)
         invalid = copy.deepcopy(PROPOSAL)
         if len(attempts) == 1:
@@ -65,7 +65,7 @@ def test_rejected_plan_gets_one_automatic_repair_before_the_consultant(agents, m
 
 def test_second_rejection_goes_to_the_consultant_with_the_validator_reason(agents, monkeypatch):
     client, fake, _, calls = agents
-    def generate(request, snapshot, sources, feedback, config=None):
+    def generate(request, snapshot, sources, feedback, config=None, **kwargs):
         invalid = copy.deepcopy(PROPOSAL); invalid["changes"][0]["value"] = 2  # already the current value: always rejected
         return Proposal.model_validate(invalid), {"mode": "model", "model": config["model"], "usage": {}}
     monkeypatch.setattr(flow.provider, "generate", generate)

@@ -261,3 +261,21 @@ def test_real_model_adapter_contract(monkeypatch):
     monkeypatch.setattr(provider.httpx, "Client", lambda **kwargs: transport(transport=provider.httpx.MockTransport(respond), **kwargs))
     proposal, metrics = generate("três parcelas", base_snapshot(), [{"id": "catalog:vacations-2", "title": "Catálogo", "content": copy.deepcopy(CATALOG)}], [])
     assert proposal.changes[0].value == 3 and metrics["usage"]["prompt_tokens"] == 100
+
+
+def test_output_cut_by_the_token_limit_is_retried_once_with_a_higher_limit(monkeypatch):
+    import app.provider as provider
+    monkeypatch.setenv("LLM_BASE_URL", "https://model.example/v1")
+    monkeypatch.setenv("LLM_MODEL", "test-model")
+    monkeypatch.setenv("LLM_API_KEY", "not-a-real-key")
+    transport = provider.httpx.Client
+    limits = []
+    def respond(request):
+        body = json.loads(request.content)
+        limits.append(body["max_completion_tokens"])
+        if len(limits) == 1:
+            return provider.httpx.Response(200, json={"choices": [{"finish_reason": "length", "message": {"content": "{\"summary\": \"cortado"}}], "usage": {}})
+        return provider.httpx.Response(200, json={"choices": [{"finish_reason": "stop", "message": {"content": json.dumps({**PROPOSAL, "named_configurations": [], "assignments": None})}}], "usage": {"prompt_tokens": 10, "completion_tokens": 30}})
+    monkeypatch.setattr(provider.httpx, "Client", lambda **kwargs: transport(transport=provider.httpx.MockTransport(respond), **kwargs))
+    proposal, metrics = generate("três parcelas", base_snapshot(), [{"id": "catalog:vacations-2", "title": "Catálogo", "content": copy.deepcopy(CATALOG)}], [])
+    assert limits == [4096, 8192] and proposal.changes[0].value == 3 and metrics["output_limit_raised_to"] == 8192

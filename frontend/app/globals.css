@@ -30,3 +30,10 @@
 @media(max-width:1000px){.simple-interpretations .interpretation-options{grid-template-columns:1fr}}
 
 .card .technical-details:not(.card){padding:0;margin:12px 0 0}.completion-panel>p{margin:10px 0}.completion-panel>.primary{margin:8px 0}
+
+/* Encaminhamento ao consultor: quatro frases curtas, uma por linha */
+.handoff{display:grid;gap:10px;margin:0 0 14px}
+.handoff div{display:grid;grid-template-columns:150px 1fr;gap:10px;align-items:start}
+.handoff dt{font-weight:600;color:var(--muted,#555)}
+.handoff dd{margin:0}
+@media (max-width:640px){.handoff div{grid-template-columns:1fr}}
