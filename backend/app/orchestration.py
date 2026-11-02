@@ -180,10 +180,14 @@ def strict_schema(model):
             obj["required"] = list(obj["properties"])
     return schema
 
+OUTPUT_FLOOR = {"interpretation_agent": 8192}  # three options plus reasoning tokens do not fit the default limit
+
 def ask(state, system, data, model, name, escalated=False):
-    content, metrics = provider.completion(model_config(state, escalated),
+    config = model_config(state, escalated)
+    content, metrics = provider.completion(config,
         [{"role": "system", "content": system}, {"role": "user", "content": json.dumps(data, ensure_ascii=False)}],
-        strict_schema(model), name=name, prompt_version=PROMPT_VERSIONS.get(name))
+        strict_schema(model), name=name, prompt_version=PROMPT_VERSIONS.get(name),
+        token_limit=max(config.get("max_completion_tokens", 4096), OUTPUT_FLOOR.get(name, 0)))
     try:
         parsed = model.model_validate(content)
     except ValueError as exc:
@@ -370,9 +374,10 @@ def build_graph(db, hcm, saver):
             raise HTTPException(502, "O agente repetiu interpretações. Retome o fluxo para obter alternativas distintas.")
         known_items = [item for item in state.get("modules", []) if item["id"] != "other"]
         known = {item["id"] for item in known_items}
-        # Modules the interpreter asked for, or named in an option's target level without asking: both mean the plan needs them.
-        levels = " ".join(o["target_level"].lower() for o in options)
-        mentioned = [item["id"] for item in known_items if item["id"] not in scope and (f"({item['id']})" in levels or f" {item['id']} " in f" {levels} " or item["label"].lower() in levels)]
+        # Modules the interpreter asked for, or whose id it wrote in an option's target level without asking: both mean the plan needs them.
+        # Labels are not matched: a module label can also name a mechanism of the current module (e.g. assignments inside Vacation).
+        words = set(re.findall(r"[a-z_]+", " ".join(o["target_level"].lower() for o in options)))
+        mentioned = [item["id"] for item in known_items if item["id"] not in scope and item["id"] in words]
         requested = [canonical_module(m) for m in result.additional_modules] or mentioned
         additions = [m for m in dict.fromkeys(requested) if m in known and m not in scope]
         if additions and len(state.get("extensions", [])) < 2 and len(scope) + len(additions) <= 4:

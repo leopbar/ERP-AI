@@ -124,7 +124,7 @@ def multi_agents(agents, monkeypatch, second_round_supported=True, handoff=None,
             option["missing_capabilities"] = [{"module": "vacations", "description": "Solicitação por gestor direto."}]
         if "assignments" not in payload["additional_catalogs"]:
             if mention_only:  # the interpreter names the other module in the target level but forgets additional_modules
-                value["options"][0].update(support="supported", limitations=[], missing_capabilities=[], target_level="Regra do grupo Operacional em Férias e regra geral em Atribuições de seleção")
+                value["options"][0].update(support="supported", limitations=[], missing_capabilities=[], target_level="Regra do grupo Operacional em Férias e regra geral em Atribuições de seleção (assignments)")
             else:
                 value["additional_modules"] = ["assignments"]
             value["explanation"] = "Férias bloqueia o pedido próprio; quem pede pelo Operacional fica em Atribuições de seleção."
@@ -187,6 +187,20 @@ def test_a_module_named_in_a_supported_option_is_brought_into_the_case(agents, m
     client, multi, factory, executor, rounds, row = multi_agents(agents, monkeypatch, mention_only=True)
     assert row["status"] == "awaiting_interpretation" and len(rounds) == 2
     assert row["workflow"]["modules_in_scope"] == ["vacations", "assignments"]
+
+def test_a_module_label_alone_does_not_extend_the_case(agents, monkeypatch):
+    """'Atribuições de Configurações' is also the vacations mechanism; only an explicit module id brings a module in."""
+    client, fake, factory, calls = agents
+    fake.modules = lambda: [*FakeHCM.modules(fake), {"id": "config_assignments", "label": "Atribuições de Configurações", "description": "Atribuições de configurações nomeadas.", "scopes": ["company"]}]
+    original = flow.provider.completion
+    def completion(config, messages, schema, *, name, **kwargs):
+        value, metrics = original(config, messages, schema, name=name, **kwargs)
+        if name == "interpretation_agent":
+            value["options"][0]["target_level"] = "Configuração nomeada CFG-X e Atribuições de Configurações"
+        return value, metrics
+    monkeypatch.setattr(flow.provider, "completion", completion)
+    row = start(client)
+    assert row["status"] == "awaiting_interpretation" and row["workflow"]["modules_in_scope"] == ["vacations"] and row["workflow"]["extensions"] == []
 
 def test_failure_in_the_second_module_undoes_the_first(agents, monkeypatch):
     client, multi, factory, executor, rounds, row = multi_agents(agents, monkeypatch)
