@@ -1,0 +1,74 @@
+name: Testes e deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Testes do backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -q -p no:cacheprovider
+        env:
+          DATABASE_URL: sqlite://
+          LANGGRAPH_SQLITE_PATH: /tmp/ci-checkpoints.db
+
+  frontend:
+    name: Tipos e testes do frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node --experimental-strip-types --test tests/*.test.mjs
+
+  deploy:
+    name: Deploy em erp.lbai.dev
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://erp.lbai.dev
+    steps:
+      # A chave só consegue executar /opt/erp-ai/deploy/deploy.sh (command= no authorized_keys do VPS).
+      - name: Executar deploy no VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/deploy_key
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o ServerAliveInterval=30 -o ServerAliveCountMax=10 "root@$VPS_HOST" deploy
+      - name: Conferir o site
+        run: curl -fsS --retry 10 --retry-delay 5 --retry-all-errors -o /dev/null -w '%{http_code}\n' https://erp.lbai.dev/

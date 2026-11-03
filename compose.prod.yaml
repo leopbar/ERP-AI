@@ -1,0 +1,57 @@
+# Produção (VPS atrás do nginx do host): docker compose -p erp-ai -f compose.prod.yaml up -d --build
+# O nginx publica https://erp.lbai.dev e encaminha /api para o backend e o resto para o frontend.
+# Os valores de produção ficam no .env do servidor, fora do Git: HCM_BASE_URL=https://hcm.lbai.dev,
+# APP_ORIGIN=https://erp.lbai.dev, COOKIE_SECURE=true e as credenciais geradas lá.
+name: erp-ai
+services:
+  database:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: erp_ai
+      POSTGRES_USER: erp_ai
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?Configure DATABASE_PASSWORD no .env}
+    volumes:
+      - erp_ai_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp_ai -d erp_ai"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://erp_ai:${DATABASE_PASSWORD}@database:5432/erp_ai
+      LLM_CONFIG_FILE: /run/erp-ai/secrets/model.json
+    volumes:
+      - ./secrets:/run/erp-ai/secrets
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8091}:8001"
+    depends_on:
+      database:
+        condition: service_healthy
+    # A porta só escuta em 127.0.0.1, então o único cliente é o nginx: confiar no X-Forwarded-For dele,
+    # para o limite de tentativas de login contar o IP real. Uma instância, como o README prevê.
+    command: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8001 --proxy-headers --forwarded-allow-ips='*'"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    environment:
+      API_PROXY_URL: http://backend:8001
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-3091}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  erp_ai_data:
