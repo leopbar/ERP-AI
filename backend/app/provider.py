@@ -10,8 +10,9 @@ from app.model_settings import read_config
 from app.model_catalog import estimate_cost, supports_reasoning_effort
 from app.schema_tools import from_model_value, to_model_schema
 from app.workflow import catalog_fields, field_schema, scope_types
+from app import progress
 
-PROMPT_VERSION = "hcm-consultant-6"
+PROMPT_VERSION = "hcm-consultant-7"
 SYSTEM_PROMPT = """Você é assistente consultivo de parametrização do HCM Lab. Responda em português.
 CONTRATO: parametrização do módulo informado no catálogo para a empresa identificada no snapshot do HCM, em homologação. Não execute ações.
 Todas as empresas cadastradas podem ser parametrizadas. Use somente a empresa, os grupos e o catálogo recebidos neste atendimento.
@@ -35,7 +36,7 @@ Analise a regra efetiva em as_of e os agendamentos futuros. Para pedidos de toda
 Mínimo não significa incompleto: se a alteração pedida deixa outros parâmetros inconsistentes com as rules do catálogo (por exemplo desabilitar um processo que exige desabilitar as solicitações, ou desabilitar parcelamento que exige máximo 1), inclua essas alterações dependentes no mesmo plano e explique-as na justificativa.
 Não repita campos já atendidos nem misture perguntas e alterações.
 Se houver ambiguidade, requisito impossível, empresa fora do escopo ou informação insuficiente: liste questions e deixe changes vazio.
-Se disserem apenas gestor, esclareça se é RH ou gestor imediato: somente aprovação pelo RH/admin existe atualmente.
+Siga a interpretação confirmada item por item: proponha só o que ela prevê, sem estender a mudança a parâmetros, escopos ou módulos que ela não cita.
 Se o pedido já estiver atendido, changes vazio e explique por quê. Inclua testes objetivos, cobrindo escopos afetados e produção preservada.
 Nunca afirme que testes foram executados. A simulação operacional do HCM usa a regra de hoje, mesmo com início futuro das férias.
 Retorne apenas o objeto do esquema. A proposta será validada pelo código e revisada pelo especialista.
@@ -56,8 +57,9 @@ def module_catalogs(snapshot, sources, catalogs=None, snapshots=None):
     module = catalog.get("module", "vacations")
     return {module: catalog}, {module: snapshot}
 
-def proposal_schema(snapshot, sources, catalogs=None, snapshots=None):
-    """Strict output schema built from the catalogs: one change variant per module and parameter, scopes and sources enumerated."""
+def proposal_schema(snapshot, sources, catalogs=None, snapshots=None, requirements=None):
+    """Strict output schema built from the catalogs: one change variant per module and parameter, scopes and sources enumerated.
+    With requirements (ids of the items of the request), every change says which items it serves."""
     catalogs, snapshots = module_catalogs(snapshot, sources, catalogs, snapshots)
     variants = []
     config_module = None
@@ -72,6 +74,8 @@ def proposal_schema(snapshot, sources, catalogs=None, snapshots=None):
         for field in fields:
             properties = {"module": {"type": "string", "enum": [module]}, "group_id": group_property, "config_code": code_property, "parameter": {"type": "string", "enum": [field["id"]]},
                           "value": to_model_schema(field_schema(field)), "reason": {"type": "string"}}
+            if requirements:
+                properties["requirements"] = {"type": "array", "items": {"type": "string", "enum": list(requirements)}}
             variants.append({"type": "object", "properties": properties, "required": list(properties), "additionalProperties": False})
     change = {"anyOf": variants} if variants else {"type": "object", "properties": {"module": {"type": "string"}, "parameter": {"type": "string"}, "value": {"type": ["string", "integer", "boolean"]}, "reason": {"type": "string"},
                                                                                      "group_id": {"type": ["integer", "null"]}, "config_code": {"type": "null"}},
@@ -130,16 +134,34 @@ def completion(config, messages, schema, *, name="vacation_proposal", token_limi
     retried = False
     try:
         while True:
-            payload = {"model": config["model"], "messages": messages, "store": False, "max_completion_tokens": limit,
-                       "response_format": {"type": "json_schema", "json_schema": {"name": name, "strict": True, "schema": schema}}}
-            if supports_reasoning_effort(config["model"]):
-                payload["reasoning_effort"] = "low" if name == "connection_check" else config.get("reasoning_effort", "medium")
-            with httpx.Client(timeout=90, follow_redirects=False) as client:
-                response = client.post(config["base_url"].rstrip("/") + "/chat/completions",
-                    headers={"Authorization": "Bearer " + config["api_key"]},
-                    json=payload)
+            stage = progress.current_step()
+            model_info = {**progress.model_metadata(), "model": config["model"], "request_attempt": 2 if retried else 1, "max_completion_tokens": limit,
+                          "reasoning_effort": ("low" if name == "connection_check" else config.get("reasoning_effort", "medium")) if supports_reasoning_effort(config["model"]) else "not_supported"}
+            with progress.span(stage, "model_prepare", **model_info):
+                payload = {"model": config["model"], "messages": messages, "store": False, "max_completion_tokens": limit,
+                           "response_format": {"type": "json_schema", "json_schema": {"name": name, "strict": True, "schema": schema}}}
+                if supports_reasoning_effort(config["model"]):
+                    payload["reasoning_effort"] = "low" if name == "connection_check" else config.get("reasoning_effort", "medium")
+            with progress.span(stage, "model_request", **model_info) as request_info:
+                # A case reads every catalog its request needs at once; with reasoning, one answer can take more than 90 s.
+                with httpx.Client(timeout=180, follow_redirects=False) as client:
+                    response = client.post(config["base_url"].rstrip("/") + "/chat/completions",
+                        headers={"Authorization": "Bearer " + config["api_key"]},
+                        json=payload)
+                request_info["http_status"] = response.status_code
+                if response.status_code >= 400:
+                    progress.emit(stage, "error", activity="model_response", **model_info, http_status=response.status_code)
+            if response.status_code < 400:
+                observed_body = response.json()
+                observed_choice = observed_body["choices"][0]
+                cost = estimate_cost(config["model"], observed_body.get("usage", {}))
+                progress.emit(stage, "done", activity="model_response", **model_info,
+                              returned_model=observed_body.get("model"), finish_reason=observed_choice.get("finish_reason"),
+                              **progress.usage_metadata(observed_body.get("usage")),
+                              **({"estimated_usd": cost["estimated_usd"]} if cost else {}))
             if response.status_code < 400 and response.json()["choices"][0].get("finish_reason") == "length" and not retried and limit < MAX_OUTPUT_TOKENS:
                 limit, retried = min(limit * 2, MAX_OUTPUT_TOKENS), True
+                progress.emit(stage, "done", activity="output_retry", model=config["model"], max_completion_tokens=limit)
                 continue
             break
         if response.status_code >= 400:
@@ -153,11 +175,12 @@ def completion(config, messages, schema, *, name="vacation_proposal", token_limi
             raise HTTPException(502, errors.get(response.status_code, "O provedor está indisponível; tente novamente mais tarde."))
         body = response.json()
         choice = body["choices"][0]
-        if choice["message"].get("refusal"):
-            raise HTTPException(422, "O modelo recusou este pedido. Revise a solicitação antes de tentar novamente.")
-        if choice.get("finish_reason") != "stop":
-            raise HTTPException(502, "A resposta do modelo ficou incompleta. Revise o limite de saída ou simplifique o atendimento.")
-        content = json.loads(choice["message"]["content"])
+        with progress.span(stage, "model_decode", **model_info):
+            if choice["message"].get("refusal"):
+                raise HTTPException(422, "O modelo recusou este pedido. Revise a solicitação antes de tentar novamente.")
+            if choice.get("finish_reason") != "stop":
+                raise HTTPException(502, "A resposta do modelo ficou incompleta. Revise o limite de saída ou simplifique o atendimento.")
+            content = json.loads(choice["message"]["content"])
         return content, {"mode": "model", "model": config["model"], "provider": "OpenAI" if config["base_url"] == "https://api.openai.com/v1" else "compatible",
                          **({"output_limit_raised_to": limit} if retried else {}),
                          "prompt_version": prompt_version or PROMPT_VERSION, "schema_sha256": hashlib.sha256(json.dumps(schema, sort_keys=True).encode()).hexdigest(),
@@ -181,18 +204,21 @@ def restore_values(proposal: Proposal, catalog, catalogs=None):
             change.value = from_model_value(change.value, field_schema(fields[change.parameter]))
     return proposal
 
-def generate(request, snapshot, sources, feedback, config=None, catalogs=None, snapshots=None):
-    """catalogs/snapshots (dicts by module, primary first) make the plan span modules; without them the catalog source is the only module."""
+def generate(request, snapshot, sources, feedback, config=None, catalogs=None, snapshots=None, requirements=None):
+    """catalogs/snapshots (dicts by module, primary first) make the plan span modules; without them the catalog source is the only module.
+    requirements are the ids of the items of the request the confirmed reading covers; each change cites the ones it serves."""
     config = config or read_config()
     if not (config["base_url"] and config["model"] and config["api_key"]):
         return None, {"mode": "unconfigured"}
-    schema = proposal_schema(snapshot, sources, catalogs, snapshots)
-    context, reduced_sources = compact_context(snapshot, sources, snapshots)
-    messages = [{"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": json.dumps({"request": request, "snapshot": context, "sources": reduced_sources, "consultant_feedback": feedback}, ensure_ascii=False)}]
+    with progress.span(progress.current_step(), "context_prepare", source_count=len(sources)):
+        schema = proposal_schema(snapshot, sources, catalogs, snapshots, requirements)
+        context, reduced_sources = compact_context(snapshot, sources, snapshots)
+        messages = [{"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": json.dumps({"request": request, "snapshot": context, "sources": reduced_sources, "consultant_feedback": feedback}, ensure_ascii=False)}]
     content, metrics = completion(config, messages, schema)
     try:
-        return restore_values(Proposal.model_validate(content), catalog_from(sources), catalogs), metrics
+        with progress.span(progress.current_step(), "output_validate"):
+            return restore_values(Proposal.model_validate(content), catalog_from(sources), catalogs), metrics
     except ValidationError as exc:
         raise HTTPException(502, "A resposta não respeitou o contrato da proposta. Revise a solicitação ou o modelo.") from exc
 

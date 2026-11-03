@@ -8,7 +8,7 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from test_workflow import setup, FakeHCM, digest, PROPOSAL  # noqa: F401
-from test_orchestration import agents, post, start, options, OPTIONS  # noqa: F401
+from test_orchestration import agents, post, start, options, SUGGESTION  # noqa: F401
 from test_execution_flow import Executor
 from app import orchestration as flow
 from app.contracts import Proposal
@@ -98,8 +98,8 @@ class MultiHCM(FakeHCM):
 
 REQUEST = "Na ABC, funcionários do grupo Operacional não podem pedir as próprias férias; apenas seus gestores e o RH pedem por eles."
 MULTI_PROPOSAL = {"summary": "Bloqueia a autossolicitação do Operacional em Férias e restringe a seleção em Atribuições. O perfil de RH já pode solicitar.", "questions": [],
-                  "changes": [{"module": "vacations", "group_id": 10, "parameter": "employee_request_enabled", "value": False, "reason": "Operacional não pede as próprias férias"},
-                              {"module": "assignments", "parameter": "rules", "value": NEW_RULES, "reason": "Operacional só abre pedidos para subordinados diretos"}],
+                  "changes": [{"module": "vacations", "group_id": 10, "parameter": "employee_request_enabled", "value": False, "reason": "Operacional não pede as próprias férias", "requirements": ["R1"]},
+                              {"module": "assignments", "parameter": "rules", "value": NEW_RULES, "reason": "Operacional só abre pedidos para subordinados diretos", "requirements": ["R1"]}],
                   "tests": ["Operacional não consegue abrir o próprio pedido", "Gestor direto abre pedido para o Operacional", "Produção preservada"],
                   "sources": ["catalog:vacations-2", "catalog:assignments:assignments-1"]}
 
@@ -119,25 +119,29 @@ def multi_agents(agents, monkeypatch, second_round_supported=True, handoff=None,
             return value, metrics
         payload = json.loads(messages[-1]["content"])
         rounds.append(payload)
-        for option in value["options"]:
-            option["support"] = "partial"; option["limitations"] = ["Quem pode pedir pelo Operacional fica em Atribuições de seleção."]
-            option["missing_capabilities"] = [{"module": "vacations", "description": "Solicitação por gestor direto."}]
+        reading = lambda label, status, modules, how: {"label": label, "status": status, "modules": modules, "how": how, "warning": ""}
+        own = {"id": "R1", "text": "Operacional não pede as próprias férias; os gestores pedem por eles", "candidates": [], "question": ""}
+        rh = {"id": "R2", "text": "O RH pede pelos funcionários", "candidates": [], "question": "",
+              "readings": [reading("Já é assim", "already_in_place", ["vacations"], "O perfil de RH já pode solicitar férias por qualquer funcionário.")]}
+        value["items"] = [own, rh]
         if "assignments" not in payload["additional_catalogs"]:
-            if mention_only:  # the interpreter names the other module in the target level but forgets additional_modules
-                value["options"][0].update(support="supported", limitations=[], missing_capabilities=[], target_level="Regra do grupo Operacional em Férias e regra geral em Atribuições de seleção (assignments)")
+            if mention_only:  # the interpreter rests a reading on the other module but forgets additional_modules
+                own["readings"] = [reading("Férias e Atribuições", "change", ["vacations", "assignments"], "Bloqueia o pedido próprio e restringe a seleção.")]
             else:
+                own["readings"] = [reading("Só em Férias", "gap", ["vacations"], "Solicitação por gestor direto.")]
                 value["additional_modules"] = ["assignments"]
             value["explanation"] = "Férias bloqueia o pedido próprio; quem pede pelo Operacional fica em Atribuições de seleção."
         elif second_round_supported:
-            value["options"][0].update(support="supported", limitations=[], missing_capabilities=[], already_in_place=["O perfil de RH já pode solicitar férias por qualquer funcionário."],
-                                       target_level="Regra do grupo Operacional em Férias e regra geral em Atribuições de seleção")
+            own["readings"] = [reading("Férias e Atribuições", "change", ["vacations", "assignments"], "Operacional deixa de pedir as próprias férias e só abre pedidos para subordinados diretos.")]
         else:
+            own["readings"] = [reading("Sem grupo de RH", "gap", ["vacations"], "Não existe um grupo de RH cadastrado na ABC.")]
+            value["items"] = [own]
             value["handoff"] = handoff
         return value, metrics
     monkeypatch.setattr(flow.provider, "completion", completion)
-    def generate(request, snapshot, sources, feedback, config=None, catalogs=None, snapshots=None):
+    def generate(request, snapshot, sources, feedback, config=None, catalogs=None, snapshots=None, requirements=None):
         assert list(catalogs) == ["vacations", "assignments"] and snapshots["assignments"]["module"] == "assignments"
-        assert any("Informe module em cada alteração" in line for line in feedback)
+        assert any("Informe module em cada alteração" in line for line in feedback) and requirements == ["R1", "R2"]
         return Proposal.model_validate(MULTI_PROPOSAL), {"mode": "model", "model": config["model"], "usage": {}, "duration_seconds": 0.1}
     monkeypatch.setattr(flow.provider, "generate", generate)
     row = client.post("/api/cases", json={"request": REQUEST, "effective_from": "2026-10-31"}).json()
@@ -151,8 +155,8 @@ def test_request_across_two_modules_becomes_one_plan_applied_module_by_module(ag
     assert row["workflow"]["modules_in_scope"] == ["vacations", "assignments"] and row["workflow"]["module_label"] == "Férias + Atribuições de seleção"
     assert row["module"] == "vacations" and row["workflow"]["extensions"] == ["assignments"]
     assert any(e["type"] == "module_extended" and e["modules"] == ["assignments"] for e in row["events"])
-    assert row["workflow"]["options"][0]["already_in_place"] == ["O perfil de RH já pode solicitar férias por qualquer funcionário."]
-    row = post(client, row, action="choose", choice="1")
+    assert row["workflow"]["suggestion"]["items"][1]["readings"][0]["how"] == "O perfil de RH já pode solicitar férias por qualquer funcionário."
+    row = post(client, row, action="choose", choice="accept")
     assert row["status"] == "review", row["workflow"].get("reason")
     plans = row["proposal"]["plans"]
     assert [plan["module"] for plan in plans] == ["vacations", "assignments"] and [plan["label"] for plan in plans] == ["Férias", "Atribuições de seleção"]
@@ -196,15 +200,45 @@ def test_a_module_label_alone_does_not_extend_the_case(agents, monkeypatch):
     def completion(config, messages, schema, *, name, **kwargs):
         value, metrics = original(config, messages, schema, name=name, **kwargs)
         if name == "interpretation_agent":
-            value["options"][0]["target_level"] = "Configuração nomeada CFG-X e Atribuições de Configurações"
+            value["items"][0]["readings"][0]["how"] = "Configuração nomeada CFG-X e Atribuições de Configurações."
         return value, metrics
     monkeypatch.setattr(flow.provider, "completion", completion)
     row = start(client)
     assert row["status"] == "awaiting_interpretation" and row["workflow"]["modules_in_scope"] == ["vacations"] and row["workflow"]["extensions"] == []
 
+FIELDS_CATALOG = {**ASSIGN_CATALOG, "version": "process_fields-1", "module": "process_fields", "module_label": "Informações adicionais dos processos",
+                  "contract_hash": hashlib.sha256(b"process_fields-1-test-contract").hexdigest(), "rules": [],
+                  "fields": [{"id": "value_entry", "label": "value_entry", "type": "array", "schema": {"type": "array", "items": {"type": "object"}}}]}
+
+def test_a_gap_in_one_process_brings_in_the_module_that_configures_that_process(agents, monkeypatch):
+    """The gap is placed in value_entry; process_fields lists value_entry among its parameters, so its catalog joins the case."""
+    client, fake, factory, calls = agents
+    multi = MultiHCM()
+    multi.data = fake.data
+    multi.extra["process_fields"] = ModuleFake(multi, "process_fields", FIELDS_CATALOG, {"value_entry": []})
+    entry = {"id": "value_entry", "label": "Lançamento de valores", "description": "Lançamento de valores: valor máximo por lançamento.", "scopes": ["company"]}
+    fields = {"id": "process_fields", "label": "Informações adicionais dos processos", "description": "Campos extras por processo.", "scopes": ["company"]}
+    multi.modules = lambda: [*MultiHCM.modules(multi), entry, fields]
+    multi.module_parameters = lambda module: {"value_entry": ["Valor máximo por lançamento (R$)"], "process_fields": ["leave", "value_entry"]}.get(module) or MultiHCM.module_parameters(multi, module)
+    app.dependency_overrides[get_hcm] = lambda: multi
+    original = flow.provider.completion
+    rounds = []
+    def completion(config, messages, schema, *, name, **kwargs):
+        value, metrics = original(config, messages, schema, name=name, **kwargs)
+        if name == "interpretation_agent":
+            rounds.append(json.loads(messages[-1]["content"]))
+            if "process_fields" not in rounds[-1]["additional_catalogs"]:
+                value["items"][0]["readings"] = [{"label": "Justificativa", "status": "gap", "modules": ["value_entry"], "how": "Exigir justificativa no lançamento.", "warning": ""}]
+        return value, metrics
+    monkeypatch.setattr(flow.provider, "completion", completion)
+    row = start(client)
+    assert row["status"] == "awaiting_interpretation", row["workflow"].get("reason")
+    assert len(rounds) == 2 and "process_fields" in rounds[1]["additional_catalogs"] and "value_entry" not in rounds[1]["additional_catalogs"]
+    assert row["workflow"]["modules_in_scope"] == ["vacations", "process_fields"] and row["workflow"]["extensions"] == ["process_fields"]
+
 def test_failure_in_the_second_module_undoes_the_first(agents, monkeypatch):
     client, multi, factory, executor, rounds, row = multi_agents(agents, monkeypatch)
-    row = post(client, row, action="choose", choice="1")
+    row = post(client, row, action="choose", choice="accept")
     before = copy.deepcopy(multi.data)
     multi.extra["assignments"].fail_next = True
     response = client.post(f"/api/cases/{row['id']}/execute", json={"revision": row["revision"], "approval_hash": row["approval_hash"]})
@@ -232,7 +266,7 @@ def test_nothing_possible_gives_a_four_line_reason(agents, monkeypatch):
 
 def test_single_module_cases_keep_their_shape(agents):
     client, fake, factory, calls = agents
-    row = post(client, options(client, start(client)), action="choose", choice="1")
+    row = post(client, options(client, start(client)), action="choose", choice="accept")
     assert row["status"] == "review" and [plan["module"] for plan in row["proposal"]["plans"]] == ["vacations"]
     assert row["proposal"]["payloads"][0]["max_installments"] == 3 and row["workflow"]["modules_in_scope"] == ["vacations"]
     assert row["workflow"]["module_label"] == "Férias"

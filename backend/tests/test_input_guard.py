@@ -117,7 +117,7 @@ def test_repeated_incomplete_clarification_reports_processing(agents,monkeypatch
 def test_expert_and_reanalysis_feedback_cannot_override_the_contract(agents):
     client,_,_,calls=agents
     row=start(client)
-    row=post(client,row,action="choose",choice="2")
+    row=post(client,row,action="choose",choice="accept",readings={"R1":1})
     assert row["status"]=="consultant_queue"
     count=len(calls)
     row=post(client,row,action="expert",comment=ATTACK)

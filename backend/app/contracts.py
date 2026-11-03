@@ -12,13 +12,15 @@ class NewCase(StrictModel):
 
 class Change(StrictModel):
     """One parameter value in one scope of one module. Scope: config_code (named configuration) > group_id (group rule) > company rule.
-    The value follows the JSON Schema the HCM catalog publishes for the parameter. An empty module means the case's primary module."""
+    The value follows the JSON Schema the HCM catalog publishes for the parameter. An empty module means the case's primary module.
+    requirements: ids of the items of the request the change serves (empty in consultant-authored plans)."""
     module: str = Field(default="", max_length=40)
     group_id: int | None = None
     config_code: str | None = Field(default=None, max_length=20)
     parameter: str
     value: Any
     reason: str = Field(min_length=3, max_length=2000)
+    requirements: list[str] = Field(default_factory=list, max_length=20)
 
     def scope(self):
         if self.config_code:

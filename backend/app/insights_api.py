@@ -79,15 +79,26 @@ def normalized(text):
 
 @app.get("/api/unhandled/capabilities")
 def capability_gaps(format: str = Query(default="json", pattern="^(json|csv)$"), db: Session = Depends(get_db), user=Depends(require_user)):
-    """Missing capabilities the interpreter described, grouped by module and description, with the cases that raised them."""
-    rows = db.scalars(select(Case).where(Case.status.in_(("consultant_queue", "consultant_closed")))).all()
+    """Missing capabilities the interpreter described in hand-offs, items a user accepted to leave out of a plan because the
+    HCM cannot do them, and information the HCM does not publish that a case needed to choose safely, grouped by module and
+    description, with the cases. Items left out stay open while their case is in use: nothing configured them."""
+    rows = db.execute(select(Case.id, Case.status, Case.workflow)).all()
     groups = {}
     for row in rows:
-        for item in (row.workflow or {}).get("capabilities") or []:
+        workflow = row.workflow or {}
+        handed_off = (workflow.get("capabilities") or []) if row.status in ("consultant_queue", "consultant_closed") else []
+        left_out = [{"module": item.get("module", ""), "description": item.get("how", "")} for item in workflow.get("not_configured") or []]
+        entries = [*((item, row.status == "consultant_queue") for item in handed_off),
+                   *((item, row.status not in ("consultant_closed", "rejected", "obsolete", "reverted")) for item in left_out),
+                   *((item, False) for item in workflow.get("information_gaps") or [])]
+        once = {}  # a hand-off lists the items the user left out too: one case counts each gap once
+        for item, pending in entries:
             key = (item.get("module", ""), normalized(item.get("description", "")))
+            once[key] = (once.get(key, (item, False))[0], once.get(key, (item, False))[1] or pending)
+        for key, (item, pending) in once.items():
             group = groups.setdefault(key, {"module": item.get("module", ""), "description": item.get("description", ""), "count": 0, "open": 0, "case_ids": []})
             group["count"] += 1
-            group["open"] += row.status == "consultant_queue"
+            group["open"] += pending
             group["case_ids"].append(row.id)
     items = sorted(groups.values(), key=lambda g: (-g["count"], g["module"], g["description"]))
     if format == "csv":

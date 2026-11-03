@@ -3,7 +3,7 @@ one automatic repair round for rejected plans, prompt version per role and catal
 import copy
 import json
 from test_workflow import setup, PROPOSAL  # noqa: F401
-from test_orchestration import agents, post, start, options, OPTIONS  # noqa: F401
+from test_orchestration import agents, post, start, options, SUGGESTION  # noqa: F401
 from test_workflow import FakeHCM
 from app import orchestration as flow
 from app.contracts import Proposal
@@ -55,7 +55,7 @@ def test_rejected_plan_gets_one_automatic_repair_before_the_consultant(agents, m
             return Proposal.model_validate(invalid), {"mode": "model", "model": config["model"], "usage": {}}
         return Proposal.model_validate(PROPOSAL), {"mode": "model", "model": config["model"], "usage": {}}
     monkeypatch.setattr(flow.provider, "generate", generate)
-    row = post(client, options(client, start(client)), action="choose", choice="1")
+    row = post(client, options(client, start(client)), action="choose", choice="accept")
     assert row["status"] == "review" and row["proposal"]["payloads"][0]["max_installments"] == 3
     assert len(attempts) == 2 and any("rejeitada pelo validador" in item and "fora do escopo" in item for item in attempts[1])
     planner = [m for m in row["workflow"]["metrics"] if m["role"] == "configuration_agent"]
@@ -69,7 +69,7 @@ def test_second_rejection_goes_to_the_consultant_with_the_validator_reason(agent
         invalid = copy.deepcopy(PROPOSAL); invalid["changes"][0]["value"] = 2  # already the current value: always rejected
         return Proposal.model_validate(invalid), {"mode": "model", "model": config["model"], "usage": {}}
     monkeypatch.setattr(flow.provider, "generate", generate)
-    row = post(client, options(client, start(client)), action="choose", choice="1")
+    row = post(client, options(client, start(client)), action="choose", choice="accept")
     assert row["status"] == "consultant_queue" and row["workflow"]["category"] == "validation_failed"
     assert "correção automática" in row["workflow"]["reason"] and "já atendido" in row["workflow"]["reason"]
     assert not row["proposal"]
@@ -83,7 +83,7 @@ def test_prompt_versions_are_sent_per_role(agents, monkeypatch):
         seen[kwargs["name"]] = kwargs.get("prompt_version")
         return original(*args, **kwargs)
     monkeypatch.setattr(flow.provider, "completion", completion)
-    post(client, options(client, start(client)), action="choose", choice="1")
+    post(client, options(client, start(client)), action="choose", choice="accept")
     assert seen == {"module_classifier": flow.PROMPT_VERSIONS["module_classifier"], "interpretation_agent": flow.PROMPT_VERSIONS["interpretation_agent"]}
     assert flow.PROMPT_VERSIONS["module_classifier"] != flow.PROMPT_VERSIONS["interpretation_agent"] != flow.PROMPT_VERSIONS["configuration_agent"]
 
@@ -96,7 +96,7 @@ def test_reasoning_effort_comes_from_the_model_catalog():
 
 def test_unsupported_choice_hands_structured_capabilities_to_the_queue(agents):
     client, fake, _, calls = agents
-    row = post(client, options(client, start(client)), action="choose", choice="2")
+    row = post(client, options(client, start(client)), action="choose", choice="accept", readings={"R1": 1})
     assert row["status"] == "consultant_queue" and row["workflow"]["category"] == "missing_capability"
     assert row["workflow"]["capabilities"] == [{"module": "vacations", "description": "Antecedência máxima para solicitação."}]
 
@@ -125,8 +125,8 @@ def test_interpreter_redirects_to_the_module_that_has_the_capability(agents, mon
             value["module"] = "vacation_policy"
         elif kwargs["name"] == "interpretation_agent" and payload["module"] == "Férias / aviso e abono":
             assert any(item["id"] == "vacations" for item in payload["modules"]) and payload["already_redirected_from"] == []
-            for option in value["options"]:
-                option["support"] = "unsupported"; option["missing_capabilities"] = [{"module": "vacations", "description": "Proibir parcelamento."}]
+            for reading in value["items"][0]["readings"]:
+                reading["status"] = "gap"
             value["suggested_module"] = "vacations"
         return value, metrics
     monkeypatch.setattr(flow.provider, "completion", completion)

@@ -2,7 +2,7 @@
 import logging
 from uuid import uuid4
 from typing import Literal
-from fastapi import Depends, HTTPException, Query
+from fastapi import Depends, HTTPException, Query, Response
 from pydantic import Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -16,6 +16,8 @@ from app.models import Case, InterpretationMemory
 from app.orchestration import EXAMPLES, GENERIC_EXAMPLE, module_label, build_graph, checkpointer, validate_models, record_memory
 from app.hcm import canonical_module
 from app.knowledge import record_lesson
+from app.workflow_map import stage_map
+from app import progress
 
 class Start(Action):
     primary_model: str = "gpt-6-luna"
@@ -26,7 +28,9 @@ class Continue(Action):
     action: Literal["guide", "clarify", "handoff", "choose", "retry", "expert", "close"]
     module: str = Field(default="vacations", max_length=40)
     request: str = Field(default="", max_length=8000)
-    choice: Literal["1", "2", "3", "none"] = "none"
+    # accept: the suggestion as shown, with readings naming the reading picked for each doubtful item (index, 0 = the suggested one).
+    choice: Literal["accept", "none"] = "none"
+    readings: dict[str, int] = Field(default_factory=dict, max_length=20)
     company_code: str = Field(default="", max_length=20)
 
 def locked(db, case_id, revision):
@@ -63,6 +67,8 @@ def project(db, row, graph, config, user, error=None):
         "company_query": state.get("company_query", ""), "company_matches": state.get("company_matches", {}),
         "confirmed_company": state.get("confirmed_company", {}),
         "request": state.get("request", row.request), "attempt": min(state.get("attempt", 1), 2),
+        "requirements": state.get("requirements", []), "information_gaps": state.get("information_gaps", []),
+        "suggestion": state.get("suggestion", {}), "not_configured": (state.get("selected") or {}).get("not_configured", []),
         "options": state.get("options", []), "explanation": state.get("explanation", ""),
         "selected": state.get("selected", {}), "confirmed_meaning": state.get("confirmed_meaning", ""),
         "memories": state.get("memories", []), "metrics": state.get("metrics", []),
@@ -103,7 +109,7 @@ def project(db, row, graph, config, user, error=None):
         added = state["extensions"][len(previous.get("extensions", [])):]
         event(row, "module_extended", user, modules=added, labels=[module_label(state, module) for module in added], scope=scope,
               reason=(state.get("classification") or {}).get("extension_reason", ""))
-    if phase == "consultant" and previous.get("phase") != "consultant" and data["category"] in ("validation_failed", "plan_questions"):
+    if phase == "consultant" and previous.get("phase") != "consultant" and data["category"] in ("validation_failed", "plan_questions", "plan_incomplete"):
         record_lesson(db, row, data["category"], "Pedido: " + row.request[:300] + " | " + str(data["reason"]))
     if phase == "review" and previous.get("phase") != "review":
         event(row, "analyzed", user, sources=state.get("sources", []), proposal=row.proposal, snapshot=row.snapshot)
@@ -112,6 +118,11 @@ def project(db, row, graph, config, user, error=None):
     save(db)
 
 def drive(db, row, user, hcm, value):
+    with progress.observe(db.get_bind(), row.id, row.revision, flow_id=row.workflow.get("thread_id")):
+        return drive_observed(db, row, user, hcm, value)
+
+
+def drive_observed(db, row, user, hcm, value):
     with checkpointer() as saver:
         graph = build_graph(db, hcm, saver)
         config = {"configurable": {"thread_id": row.workflow["thread_id"]}, "recursion_limit": 40}
@@ -127,7 +138,23 @@ def drive(db, row, user, hcm, value):
             project(db, row, graph, config, user, message)
             raise HTTPException(502, message) from exc
         project(db, row, graph, config, user)
+        if row.status == "review":
+            progress.emit("approval", "waiting")
     return output(row)
+
+
+@app.get("/api/cases/{case_id}/progress")
+def case_progress(case_id: int, response: Response, db: Session = Depends(get_db), user=Depends(require_user)):
+    row = load(db, case_id)
+    response.headers["Cache-Control"] = "no-store"
+    # Same access policy as reading the case; no HCM/model calls, no row locks.
+    return {"case_id": row.id, "revision": row.revision, "status": row.status,
+            "phase": (row.workflow or {}).get("phase"), "progress": progress.read(db.get_bind(), case_id)}
+
+@app.get("/api/workflow/map")
+def journey_map(user=Depends(require_user)):
+    # The ERP's own stage map: no case, HCM or model data.
+    return stage_map()
 
 @app.post("/api/cases/{case_id}/orchestrate")
 def start(case_id: int, payload: Start, db: Session = Depends(get_db), user=Depends(require_user), hcm=Depends(get_hcm)):
@@ -197,11 +224,14 @@ def resume(case_id: int, payload: Continue, db: Session = Depends(get_db), user=
         event(row, "company_confirmed", user, company=company)
         value = {"module": canonical_module(payload.module), "request": payload.request, "confirmed_company": company}
     elif payload.action == "choose" and phase == "choice":
-        value = {"choice": payload.choice, "comment": payload.comment.strip()}
+        if not row.workflow.get("suggestion"):
+            # Paused on the three options of an earlier version: a new analysis builds the suggestion.
+            raise HTTPException(409, "Este atendimento foi analisado no formato anterior. Use Reanalisar pedido.")
+        value = {"choice": payload.choice, "readings": payload.readings, "comment": payload.comment.strip()}
         event(row, "interpretation_rejected" if payload.choice == "none" else "interpretation_confirmed", user,
-              choice=payload.choice, attempt=row.workflow["attempt"], comment=payload.comment)
+              choice=payload.choice, readings=payload.readings, attempt=row.workflow["attempt"], comment=payload.comment)
         if payload.choice == "none" and payload.comment.strip():
-            record_lesson(db, row, "interpretation_rejected", "Interpretações recusadas para o pedido: " + row.request[:300] + " | Correção: " + payload.comment.strip())
+            record_lesson(db, row, "interpretation_rejected", "Sugestão recusada para o pedido: " + row.request[:300] + " | Correção: " + payload.comment.strip())
     elif payload.action in ("expert", "close") and phase == "consultant":
         if len(payload.comment.strip()) < 10:
             raise HTTPException(422, "O consultor deve registrar sua interpretação ou conclusão com ao menos 10 caracteres.")

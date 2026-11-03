@@ -72,7 +72,7 @@ def test_validator_rejections_are_recorded_and_offered_to_the_interpreter(agents
         invalid = copy.deepcopy(PROPOSAL); invalid["changes"][0]["value"] = 2
         return Proposal.model_validate(invalid), {"mode": "model", "model": config["model"], "usage": {}}
     monkeypatch.setattr(flow.provider, "generate", generate)
-    row = post(client, options(client, start(client)), action="choose", choice="1")
+    row = post(client, options(client, start(client)), action="choose", choice="accept")
     assert row["status"] == "consultant_queue" and len(row["workflow"]["repair_notes"]) == 2
     with factory() as db:
         kinds = {lesson.kind for lesson in db.scalars(select(Lesson)).all()}
@@ -92,7 +92,7 @@ def test_validator_rejections_are_recorded_and_offered_to_the_interpreter(agents
 def test_metrics_and_capability_gaps_endpoints(agents):
     client, fake, factory, calls = agents
     row = options(client, start(client))
-    row = post(client, row, action="choose", choice="2")
+    row = post(client, row, action="choose", choice="accept", readings={"R1": 1})
     assert row["status"] == "consultant_queue"
     metrics = client.get("/api/metrics").json()
     assert metrics["totals"]["cases"] == 1 and metrics["totals"]["validated"] == 0 and metrics["totals"]["cost_per_validated_case"] is None

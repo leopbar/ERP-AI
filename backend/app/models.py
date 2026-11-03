@@ -37,6 +37,14 @@ class Setting(Base):
     updated_at: Mapped[str] = mapped_column(String(40), default=now)
 
 
+class WorkflowProgress(Base):
+    """Independent observation only: never participates in Case revisions or locks."""
+    __tablename__ = "workflow_progress"
+    case_id: Mapped[int] = mapped_column(primary_key=True)
+    run_id: Mapped[str] = mapped_column(String(36))
+    data: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
 class Lesson(Base):
     """Counterexamples harvested from the flow: rejected interpretations, validator rejections and
     consultant resolutions. Text is redacted of company and group names before it is stored."""

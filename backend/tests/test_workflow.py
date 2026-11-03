@@ -94,7 +94,7 @@ def resolve(data, as_of=None):
 def base_snapshot():
     return resolve(base_data())
 
-PROPOSAL = {"summary": "Aumentar limite para três parcelas", "questions": [], "changes": [{"group_id": None, "parameter": "max_installments", "value": 3, "reason": "Atender o pedido"}], "tests": ["Conferir três parcelas", "Conferir aprovação obrigatória"], "sources": ["catalog:vacations-2"]}
+PROPOSAL = {"summary": "Aumentar limite para três parcelas", "questions": [], "changes": [{"group_id": None, "parameter": "max_installments", "value": 3, "reason": "Atender o pedido", "requirements": ["R1"]}], "tests": ["Conferir três parcelas", "Conferir aprovação obrigatória"], "sources": ["catalog:vacations-2"]}
 
 class FakeHCM:
     module = "vacations"

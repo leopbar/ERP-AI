@@ -38,8 +38,8 @@ The application's user interface is in Portuguese. Throughout this document, scr
 | Step | Who | What happens |
 |---|---|---|
 | Request | Consultant | Describes the goal and the effective date in natural language. |
-| Understanding | Agents | Identify the company and the HCM module, read the module catalog and the current configuration, and produce **three interpretations**. |
-| Choice | Consultant | Picks the correct interpretation, or rejects all of them with a correction. |
+| Understanding | Agents | Identify the company and every HCM module the request needs, read their catalogs and current configuration, and produce **one suggestion, item by item**: what will be configured, what is already in force, what HCM cannot do and the doubts to confirm. |
+| Choice | Consultant | Accepts the suggestion, keeping or changing the reading of each doubtful item, or rejects it with a correction. |
 | Plan | Agents | Build a configuration plan restricted to the catalog, validated by JSON Schema and by HCM's official validator. |
 | Approval | Consultant | Approves the exact plan. The approval is bound to a hash of the plan and of the context. |
 | Application | ERP AI → HCM | HCM re-checks the context, applies the plan atomically, runs tests and records the operation. |
@@ -63,7 +63,7 @@ Other rules:
 - Agents carry **no HR business knowledge** in code or prompts. Modules, fields, schemas, scopes, precedence and rules all come from the catalog published by the API.
 - **No write to HCM** without human approval of the exact plan, an approval hash and a context check. Everything runs in staging; production never.
 - **Secrets** (API keys, tokens, passwords) never enter prompts, checkpoints, logs or responses.
-- If the requested configuration is possible with the HCM catalog — even by combining two or more modules — ERP AI prepares and applies it in a **single plan**. If it is not possible, nothing is applied and the reason is given to the user.
+- If the requested configuration is possible with the HCM catalog — even by combining two or more modules — ERP AI prepares and applies it in a **single plan**. When only part of it is possible, the suggestion says what will and will not be configured; with the user's acceptance, the possible part is applied and the rest is registered in **Unhandled**. When nothing is possible, nothing is applied and the reason is given to the user.
 - **User-facing messages** are short and plain, written for non-specialists: what was understood, what is possible, what prevented it, what to do now. Technical details stay in dedicated fields (`missing_capabilities`, events, metrics).
 
 ---
@@ -181,7 +181,7 @@ Model configuration done in the UI is stored in `secrets/model.json`, which is g
 1. Go to http://localhost:3001 and log in with the access in `.local-access.txt`.
 2. In **AI model** (*Modelo de IA*), choose a model, save your API key and test the connection. Never send the key through the chat. Prices, availability and estimates are shown on screen.
 3. In **Cases** (*Atendimentos*), describe the goal and the effective date. In **Agent models** (*Modelos dos agentes*), check the model for the first round (**Luna** by default) and for re-analysis (**Sol** by default), with prices. The saved key is reused; the previous global model is preserved.
-4. Click **Analyze request** (*Analisar solicitação*). The system identifies the company and the module and goes straight to **three interpretations**. Choose the correct one; **None of these options** (*Nenhuma dessas opções*) redoes the identification using your correction. Then review the configuration proposal.
+4. Click **Analyze request** (*Analisar solicitação*). The system identifies the company and the modules and goes straight to **one suggestion, item by item**. Check each item; where there is a doubt the suggested answer is already selected — change it if it is not right. Click **Accept suggestion** (*Aceitar sugestão*); **Not this** (*Não é isso*) redoes the identification using your correction. Then review the configuration proposal.
 5. Click **Approve and apply in staging** (*Aprovar e aplicar em homologação*). HCM applies the exact plan, tests it and records the operation. There is no need to open HCM to configure anything.
 6. After the "configuration applied" message, click **Approve and save experience** (*Aprovar e guardar experiência*) if the result meets the request. The automatic report is in an optional details section; there is no evidence questionnaire.
 7. To undo, use **Revert this application in staging** (*Reverter esta aplicação em homologação*). Later changes block the rollback, to preserve other people's work.
@@ -192,7 +192,7 @@ The **How to use** (*Como usar*) menu explains the flow inside the application. 
 
 ## 7. Simplified flow
 
-- The analysis identifies company and module automatically and pauses directly on the three interpretations.
+- The analysis identifies company and modules automatically and pauses directly on the suggestion.
 - A clarification is requested **only** when the company is missing, ambiguous, not found or not authorized. There is no separate confirmation of company or module.
 - A **first rejection** redoes classification, company lookup and interpretation using the correction. A **second rejection** forwards the case to the consultant.
 - Redoing the proposal starts a new entry and deactivates the previous intent memory of that case.
@@ -206,19 +206,19 @@ A BPMN diagram of the whole flow is in [`docs/fluxo-agentes-bpmn.svg`](docs/flux
 
 ### 8.1 The graph
 
-LangGraph organizes classification, catalog lookup, guided presentation, generation of three interpretations, the pause for the user's choice, intent memory, the validated plan and hand-off to the consultant.
+LangGraph organizes classification, catalog lookup, guided presentation, the suggestion, the pause for the user's acceptance, intent memory, the validated plan and hand-off to the consultant.
 
 | Node | Role | Next |
 |---|---|---|
 | `guard_input` | Scope check of the latest message. | `classify`, or end if out of scope |
-| `classify` | Picks company and module (module list comes from HCM). | `preview`, `context_expert` (consultant re-plan), or end |
+| `classify` | Picks company, the main module and every other module the request needs (module list comes from HCM). | `preview`, `context_expert` (consultant re-plan), or end |
 | `preview` | Company lookup and guided presentation. | `clarify` or `context` |
 | `clarify` | Pause for a missing/ambiguous company. | `guard_input` or `consultant` |
 | `context` | Loads catalog(s) and current snapshot(s), retrieves knowledge. | `alternatives` or `consultant` |
-| `alternatives` | Generates three interpretations. May **redirect** or **extend** modules. | `choice`, `context` (redirect/extend) or `consultant` |
-| `choice` | Pause (`interrupt`) for the user's choice. | `remember`, `guard_input` (rejection) or `consultant` |
-| `remember` | Stores the confirmed intent. | `plan` or `consultant` |
-| `plan` | Builds and validates the plan; one retry with the validator's reason. | end or `consultant` |
+| `alternatives` | Builds one suggestion, item by item, with the doubts as questions. May **redirect** or **extend** modules; goes to the consultant only when no item is possible. | `choice`, `context` (redirect/extend) or `consultant` |
+| `choice` | Pause (`interrupt`) for the user to accept the suggestion, with the reading picked for each doubtful item, or reject it. | `remember`, `guard_input` (rejection) or `consultant` |
+| `remember` | Stores the confirmed intent. Items accepted as not configurable stay out of the plan; only when nothing is configurable does the case go to the consultant. | `plan` or `consultant` |
+| `plan` | Builds the plan, checks that it does each item of the confirmed reading and nothing else, and validates it; one retry with the reason. | end or `consultant` |
 | `consultant` | Hand-off to the Unhandled queue. | end, or `guard_input` when the consultant asks for a new plan |
 | `context_expert` | Context for a consultant-guided plan. | `plan` |
 
@@ -237,12 +237,19 @@ LangGraph organizes classification, catalog lookup, guided presentation, generat
 - A choice that depends on a **missing capability** is also forwarded to the consultant, without application.
 - The consultant can guide a new plan, use the validated editor, or close the hand-off with a conclusion.
 
-### 8.4 Modules and interpretations
+### 8.4 Modules and the suggestion
 
 - The list of modules the classifier knows comes **from HCM on every flow**, with label and description; there is no fixed list in ERP AI. Classification covers Vacation, Payroll/payslip, Timekeeping, Hiring, Benefits and Other.
 - Existing parameters of Vacation, Timekeeping, Hiring, Payslip and Benefits have connectors. Requirements not present in the catalogs are recorded in Unhandled — no fictitious parameters.
-- Each interpretation states the level it intends to change and describes capability gaps with module and description; these show up in the Unhandled queue.
-- A plan rejected by the validator goes back to the model **once**, with the reason, before going to the consultant.
+- The interpreter produces **one suggestion for the whole request, item by item** (`suggestion.items`: R1, R2…). Each item lists its `readings`, the suggested one first: what the user sees (`label`), what happens (`how`), the modules it rests on and its status — `change` (will be configured), `already_in_place` or `gap` (no parameter of the catalogs does it).
+- **A doubt is a question, not a guess.** When the data does not decide — an item that can be met by different parameters or modules, a term that may designate different groups, named configurations or list items, a limit the current rule already exceeds — the item carries a `question` and its alternatives, with the suggested reading pre-selected. The user keeps it or picks another before accepting.
+- **What is possible instead.** When the catalog does something close to the request but not exactly (broader than a condition of it, with a side effect), the suggested reading is what is possible, with a `warning` that says what differs. `gap` is only for what nothing in the catalogs approaches.
+- When an item applies to people described by a term of the request (a plural noun, a category, a job title), it lists in `candidates` every structure that term may designate — by name or by the values of the fields of list items. The interpreter receives `list_dimensions`, the values that tell the items of each list apart. Two or more candidates must become readings; a single reading goes back to the model once.
+- An answer that leaves out a numbered item of the request, or repeats a reading, goes back to the model once, with the reason; if it happens again, no suggestion is shown and the flow can be resumed.
+- Information the HCM does not publish and that a choice needs (for example, who belongs to each calculation group and job type) is recorded in `information_gaps` and shown above the suggestion.
+- A reading that rests on a catalog the case did not read, on a module without connector, or on no module becomes a `gap` that says why.
+- The ids the model writes are read back to the items (`R1 — texto…` becomes `R1`); id fields have no length cap, because a cap cut such answers into unreadable text.
+- A plan rejected by the validator, or one that does not follow the confirmed reading item by item, goes back to the model **once**, with the reason, before going to the consultant.
 - Each agent records its own prompt version in the metrics.
 
 ### 8.5 Requirements already in place
@@ -299,11 +306,14 @@ An example of the contract is in [`evaluation/contract-v2-example.json`](evaluat
 
 ## 10. Requests that span more than one module
 
-- The classifier picks the module of the **main requirement**.
-- If the interpreter concludes that part of the request belongs to another module, it returns `additional_modules`: the flow loads that module's catalog and snapshot and redoes the analysis with all catalogs (event `module_extended`, up to two additions per round).
-- When the current catalog covers nothing in the request, `suggested_module` switches modules (event `module_redirected`).
+- The classifier picks the module of the **main requirement** and lists in `related_modules` every other module the request needs, so all catalogs are read before the first interpretation.
+- If the interpreter still finds part of the request in another module — it asks for it in `additional_modules`, names it in an option's coverage, or writes its id in a target level — the flow loads that module's catalog and snapshot and redoes the analysis with all catalogs (event `module_extended`). The bounds are **two extension rounds** and **eight modules** per case; they count rounds, not modules.
+- A gap declared in a module whose catalog the case did not read is a guess from the module list: that catalog is read before the case is handed off.
+- When the current catalog covers nothing in the request, `suggested_module` switches the main module (event `module_redirected`); the other modules of the case stay.
 - The final plan has **one part per module** (`proposal.plans`, each with its own payloads, snapshot and catalog). Every change carries `module`; each part is validated with its own module's catalog and validator; **a single approval hash covers all parts**.
-- If the configuration is possible, even by combining modules, ERP AI does it. If it is not, nothing is applied and the reason is given in four sentences.
+- Every change also cites the items of the request it serves (`requirements`). Before the official validation, the ERP checks that each item to change has a change in the module the confirmed reading named, and that no change serves anything else — a second parameter nobody asked for is sent back. A plan that still fails after one correction is not applied: the case goes to the consultant (`plan_incomplete`).
+- The approval screen lists the items of the request with the number of changes each one receives, or "already like this today" (`proposal.requirements`).
+- If the configuration is possible, even by combining modules, ERP AI does it. If only part is possible, the possible part is planned after the user accepts the suggestion and the rest is registered (`proposal.not_configured`, listed in **Missing capabilities**). If nothing is possible, nothing is applied and the reason is given in four sentences.
 
 ---
 
@@ -400,6 +410,7 @@ The **Unhandled** (*Não tratados*) queue (`/api/unhandled`, with `/api/consulta
 
 - Requirements with no feasible interpretation are forwarded automatically, without forcing the choice of an impossible alternative.
 - The consultant can review the rule, prepare a validated plan or close the item with a conclusion; resolved cases leave the queue.
+- **Missing capabilities** (*Capacidades ausentes*) also lists the items a user accepted to leave out of a plan because HCM cannot do them (open while their case is in use), and information the HCM does not publish that a case needed to choose safely — for example, who belongs to each calculation group and job type. The gap is recorded and the case goes on; the choice screen tells the user to check it before choosing.
 - The queue does not send external messages.
 
 ---
@@ -465,6 +476,8 @@ All routes except `/health` and `/api/login` require an authenticated session.
 | GET | `/api/connection` | HCM connection status. |
 | GET/POST | `/api/cases` | List/create cases. |
 | GET | `/api/cases/{id}` | Case details. |
+| GET | `/api/cases/{id}/progress` | Read-only progress records of the case (journey card). |
+| GET | `/api/workflow/map` | Stops and LangGraph decisions of each journey stage. |
 | POST | `/api/cases/{id}/analyze` | Analyze a request. |
 | POST | `/api/cases/{id}/orchestrate` | Start the LangGraph flow. |
 | POST | `/api/cases/{id}/workflow` | Resume the flow (choice, rejection, clarification, consultant action). |
@@ -505,7 +518,7 @@ npm ci
 npm run build
 ```
 
-HCM has its own suite (`python -m pytest -q` in its `backend`), covering rules, isolation, permissions, atomic execution, idempotent retry, changed context, future effective dates, groups and rollback. ERP AI's suite also covers recovery from a lost response, bound approval, confirmation without manual evidence, exclusion of reverted cases from memory, orchestration, contract v2, multi-module plans, input guard, learning and model settings.
+HCM has its own suite (`python -m pytest -q` in its `backend`), covering rules, isolation, permissions, atomic execution, idempotent retry, changed context, future effective dates, groups and rollback. ERP AI's suite also covers recovery from a lost response, bound approval, confirmation without manual evidence, exclusion of reverted cases from memory, orchestration, contract v2, multi-module plans, request coverage (every option and the plan handle each item of the request; `test_request_coverage.py` reproduces case 103), input guard, learning and model settings.
 
 Tests with mocks do not prove model quality; the scenarios in `evaluation/` still require specialist review and functional comparison.
 
@@ -523,6 +536,7 @@ All of them are reversible and only touch staging.
 | `scripts/live_escalation.py` | Luna → Sol (high reasoning) → consultant. | Yes | None |
 | `scripts/live_module_battery.py [round2] [module,…]` | One realistic request per HCM module through classification and interpretation. | Yes | None |
 | `scripts/evaluate.py --execute` | Functional evaluation (see §11.3). | One call per scenario | None |
+| `scripts/live_request_coverage.py [S1,S2…] [tag]` | Ten requests with one to five items (including case 103) through the real agents up to the plan, in a throwaway in-memory ERP database with a technical login; never executes. Report in `artifacts/request-coverage-<ids>[-<tag>].json`. Run with `docker compose run --rm --no-deps -T -e DATABASE_URL=sqlite:// -e LANGGRAPH_SQLITE_PATH=/tmp/live-checkpoints.db -v "C:/projects/ERP-AI:/repo" backend python /repo/scripts/live_request_coverage.py`. | A few calls per scenario | None |
 
 These scripts never change the saved model and never publish production. Technical cases are reverted and do not become approved experience.
 
@@ -567,7 +581,8 @@ These scripts never change the saved model and never publish production. Technic
 | Cases | Atendimentos |
 | Agent models | Modelos dos agentes |
 | Analyze request | Analisar solicitação |
-| None of these options | Nenhuma dessas opções |
+| Accept suggestion | Aceitar sugestão |
+| Not this | Não é isso |
 | Approve and apply in staging | Aprovar e aplicar em homologação |
 | Approve and save experience | Aprovar e guardar experiência |
 | Revert this application in staging | Reverter esta aplicação em homologação |
@@ -576,6 +591,7 @@ These scripts never change the saved model and never publish production. Technic
 | Unhandled | Não tratados |
 | Missing capabilities | Capacidades ausentes |
 | Already like this today | Já está assim hoje |
+| Items of the request | Itens do pedido |
 | How to use | Como usar |
 | Staging | Homologação |
 | Vacation / Timekeeping / Hiring / Payslip / Benefits | Férias / Controle de Ponto / Admissão / Folha demonstrativa / Benefícios |

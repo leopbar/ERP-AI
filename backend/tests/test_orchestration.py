@@ -8,10 +8,12 @@ from app.contracts import Proposal
 from app.models import InterpretationMemory
 from test_workflow import setup, PROPOSAL
 
-OPTIONS = {"explanation": "Três maneiras de interpretar sua regra.", "options": [
-    {"title": "Pelo menos quinze dias", "meaning": "Permitir pedidos com pelo menos quinze dias de antecedência, para toda a empresa ABC.", "example": "Férias dia 30: pedir até dia 15.", "target_level": "regra geral da empresa", "support": "supported", "limitations": [], "missing_capabilities": []},
-    {"title": "No máximo quinze dias", "meaning": "Permitir pedidos apenas dentro dos quinze dias anteriores às férias.", "example": "Férias dia 30: pedir do dia 15 em diante.", "target_level": "regra geral da empresa", "support": "unsupported", "limitations": ["Não existe antecedência máxima."], "missing_capabilities": [{"module": "vacations", "description": "Antecedência máxima para solicitação."}]},
-    {"title": "Exatamente quinze dias", "meaning": "Permitir pedidos somente no décimo quinto dia antes das férias.", "example": "Férias dia 30: pedir somente dia 15.", "target_level": "regra geral da empresa", "support": "unsupported", "limitations": ["Não existe janela de um dia."], "missing_capabilities": [{"module": "vacations", "description": "Janela exata de solicitação."}]}]}
+# One suggestion with one doubtful item: the suggested reading is configurable, the other two are not in the catalog.
+SUGGESTION = {"explanation": "Antecedência de quinze dias para pedir férias.", "items": [
+    {"id": "R1", "text": "Quinze dias de antecedência para pedir férias", "candidates": [], "question": "Como contar os quinze dias?", "readings": [
+        {"label": "Pelo menos quinze dias", "status": "change", "modules": ["vacations"], "how": "Pedidos com pelo menos quinze dias de antecedência, na regra geral da empresa ABC.", "warning": ""},
+        {"label": "No máximo quinze dias", "status": "gap", "modules": ["vacations"], "how": "Antecedência máxima para solicitação.", "warning": ""},
+        {"label": "Exatamente quinze dias", "status": "gap", "modules": ["vacations"], "how": "Janela exata de solicitação.", "warning": ""}]}]}
 
 @pytest.fixture
 def agents(setup, monkeypatch, tmp_path):
@@ -21,7 +23,7 @@ def agents(setup, monkeypatch, tmp_path):
     def completion(config, messages, schema, *, name, **kwargs):
         calls.append((name, config["model"], config.get("reasoning_effort")))
         request = json.loads(messages[-1]["content"]).get("request", "")
-        result = {"module": "benefits" if "benefícios" in request.lower() else "vacations", "explanation": "Assunto identificado.", "company_query": "Outra Ltda" if "Outra" in request else "ABC Ltda", "scope": "parametrization"} if name == "module_classifier" else copy.deepcopy(OPTIONS)
+        result = {"module": "benefits" if "benefícios" in request.lower() else "vacations", "explanation": "Assunto identificado.", "company_query": "Outra Ltda" if "Outra" in request else "ABC Ltda", "scope": "parametrization"} if name == "module_classifier" else copy.deepcopy(SUGGESTION)
         return result, {"mode": "model", "model": config["model"], "usage": {}, "duration_seconds": 0.1}
     monkeypatch.setattr(flow.provider, "completion", completion)
     def generate(*args, config=None, **kwargs):
@@ -50,16 +52,16 @@ def test_durable_pauses_confirmation_and_separate_memory(agents):
     # A new HTTP invocation recompiles the graph and reopens the file checkpointer.
     row = options(client, row)
     assert row["status"] == "awaiting_interpretation"
-    assert len(row["workflow"]["options"]) == 3
+    assert len(row["workflow"]["suggestion"]["items"][0]["readings"]) == 3
     assert len(calls) == 2
     before = copy.deepcopy(fake.data)
-    row = post(client, row, action="choose", choice="1")
+    row = post(client, row, action="choose", choice="accept")
     assert row["status"] == "review" and row["approval_hash"]
     assert len(calls) == 3  # resuming a choice does not repeat classifier or alternatives
     assert fake.data == before  # selection never applies a configuration
     with factory() as db:
         memory = db.scalar(select(InterpretationMemory))
-        assert memory.meaning == OPTIONS["options"][0]["meaning"]
+        assert memory.meaning == flow.accepted(SUGGESTION["items"], {})["meaning"]
         assert memory.actor == "consultor" and memory.module == "vacations"
     assert client.get("/api/interpretation-memories").json()[0]["active"]
     assert client.post("/api/interpretation-memories/1/forget", json={}).status_code == 200
@@ -85,7 +87,7 @@ def test_none_escalates_once_then_consultant(agents):
 def test_missing_capability_goes_to_consultant_without_plan(agents):
     client, fake, factory, calls = agents
     row = options(client, start(client))
-    row = post(client, row, action="choose", choice="2")
+    row = post(client, row, action="choose", choice="accept", readings={"R1": 1})
     assert row["status"] == "consultant_queue"
     assert len(calls) == 2 and not row["proposal"]
     row = post(client, row, action="close", comment="O HCM precisa de parâmetro de antecedência máxima.")
@@ -111,7 +113,7 @@ def test_retry_uses_checkpoint_without_repeating_accepted_choice(agents, monkeyp
         return real(*args, **kwargs)
     monkeypatch.setattr(flow.provider, "generate", transient)
     row = options(client, start(client))
-    response = client.post(f"/api/cases/{row['id']}/workflow", json={"revision": row["revision"], "action": "choose", "choice": "1"})
+    response = client.post(f"/api/cases/{row['id']}/workflow", json={"revision": row["revision"], "action": "choose", "choice": "accept"})
     assert response.status_code == 504
     row = client.get(f"/api/cases/{row['id']}").json()
     assert row["status"] == "workflow_error"
@@ -125,14 +127,14 @@ def test_stale_choice_and_wrong_phase_rejected(agents):
     row = start(client)
     wrong = client.post(f"/api/cases/{row['id']}/workflow", json={"revision": row["revision"], "action": "guide"})
     assert wrong.status_code == 409
-    updated = post(client, row, action="choose", choice="1")
-    stale = client.post(f"/api/cases/{row['id']}/workflow", json={"revision": row["revision"], "action": "choose", "choice": "1"})
+    updated = post(client, row, action="choose", choice="accept")
+    stale = client.post(f"/api/cases/{row['id']}/workflow", json={"revision": row["revision"], "action": "choose", "choice": "accept"})
     assert stale.status_code == 409 and updated["status"] == "review"
 
 
 def test_memory_is_scoped_by_actor_company_catalog_and_module(agents):
     client, fake, factory, calls = agents
-    row = post(client, options(client, start(client)), action="choose", choice="1")
+    row = post(client, options(client, start(client)), action="choose", choice="accept")
     nextrow = options(client, start(client))
     assert len(nextrow["workflow"]["memories"]) == 1
     with factory() as db:
@@ -144,7 +146,7 @@ def test_memory_is_scoped_by_actor_company_catalog_and_module(agents):
 
 def test_consultant_can_submit_validated_manual_resolution(agents):
     client, *_ = agents
-    row = post(client, options(client, start(client)), action="choose", choice="2")
+    row = post(client, options(client, start(client)), action="choose", choice="accept", readings={"R1": 1})
     assert row["workflow"]["catalog"]["version"] == "vacations-2"
     row = post(client, row, "manual-proposal", proposal=PROPOSAL, comment="Proposta revisada pelo consultor.")
     assert row["status"] == "review" and row["workflow"]["phase"] == "review"
@@ -153,7 +155,7 @@ def test_consultant_can_submit_validated_manual_resolution(agents):
 
 def test_corrected_plan_restarts_with_feedback_and_without_old_snapshot(agents):
     client, *_ = agents
-    row = post(client, options(client, start(client)), action="choose", choice="1")
+    row = post(client, options(client, start(client)), action="choose", choice="accept")
     old_thread = row["workflow"]["thread_id"]
     row = post(client, row, "orchestrate", comment="Corrigir para antecedência mínima de vinte dias.")
     assert row["workflow"]["thread_id"] != old_thread
@@ -167,7 +169,7 @@ def test_company_and_module_identified_without_confirmation(agents):
     assert row["status"] == "awaiting_interpretation" and len(calls) == 2
     assert row["workflow"]["confirmed_company"]["legal_name"] == "ABC Ltda"
     assert row["workflow"]["module"] == "vacations"
-    assert len(row["workflow"]["options"]) == 3
+    assert len(row["workflow"]["suggestion"]["items"]) == 1
 
 
 @pytest.mark.parametrize("kind", ["missing", "ambiguous"])
@@ -215,7 +217,7 @@ def test_arbitrary_company_is_used_through_plan_execution_approval_and_rollback(
     assert row["company_code"] == ""
     row = post(client, row, "orchestrate")
     assert row["company_code"] == "234234SZDFA"
-    row = post(client, row, action="choose", choice="1")
+    row = post(client, row, action="choose", choice="accept")
     assert row["proposal"]["payloads"][0]["company_id"] == 7
     executor = Executor(fake)
     fake.apply, fake.verify, fake.rollback = executor.apply, executor.verify, executor.rollback
@@ -233,10 +235,9 @@ def test_missing_capabilities_are_automatically_registered_in_unhandled(agents, 
     def unsupported(*args, **kwargs):
         value, metrics = original(*args, **kwargs)
         if kwargs["name"] == "interpretation_agent":
-            for option in value["options"]:
-                option["support"] = "unsupported"
-                option["limitations"] = ["O HCM não possui limite anual de solicitações."]
-                option["missing_capabilities"] = [{"module": "vacations", "description": "Limite anual de solicitações de férias."}]
+            for reading in value["items"][0]["readings"]:
+                reading["status"] = "gap"
+            value["items"][0]["readings"][0]["how"] = "Limite anual de solicitações de férias."
         return value, metrics
     monkeypatch.setattr(flow.provider, "completion", unsupported)
     row = start(client)
