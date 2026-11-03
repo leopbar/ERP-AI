@@ -1,13 +1,13 @@
 'use client';
 
 import {useEffect,useState} from 'react';
-import {BadgeCheck,BookmarkCheck,BookOpen,BookOpenCheck,Building2,Check,CircleAlert,Database,FileCheck2,FileSearch,FileText,GitBranch,GitCompare,History,Layers3,ListChecks,LoaderCircle,Pause,Scale,ScanSearch,Server,ShieldCheck,Sparkles,Undo2,Upload,UserRound,X,type LucideIcon} from 'lucide-react';
+import {BadgeCheck,BookmarkCheck,BookOpen,BookOpenCheck,Building2,Check,CircleAlert,Database,FileCheck2,FileSearch,FileText,GitBranch,GitCompare,History,Layers3,ListChecks,LoaderCircle,Pause,Scale,ScanSearch,Server,ShieldCheck,Sparkles,Hourglass,Undo2,Upload,UserRound,X,type LucideIcon} from 'lucide-react';
 import AgentPortrait from './AgentPortrait';
 import {activityNames,buildStageLine,operationNames,stageKey,type DecisionView,type LineState,type Span,type StageMap,type StopView,type TraceProgress,type TraceRun} from './stageTrace';
 
 type Json=Record<string,any>;
 type Step={id:string;title:string;description:string};
-const icons:Record<string,LucideIcon>={request:FileText,modules:Layers3,scope:ShieldCheck,company:Building2,catalog:BookOpenCheck,snapshot:Database,knowledge:BookOpen,options:ListChecks,person:UserRound,intent:BookmarkCheck,sources:FileSearch,validator:BadgeCheck,check:ScanSearch,apply:Upload,rollback:Undo2,report:FileCheck2,compare:GitCompare};
+const icons:Record<string,LucideIcon>={request:FileText,modules:Layers3,scope:ShieldCheck,company:Building2,catalog:BookOpenCheck,snapshot:Database,knowledge:BookOpen,options:ListChecks,person:UserRound,intent:BookmarkCheck,sources:FileSearch,validator:BadgeCheck,check:ScanSearch,apply:Upload,rollback:Undo2,report:FileCheck2,compare:GitCompare,waiting:Hourglass};
 const techs:Record<string,[string,LucideIcon]>={model:['Modelo de IA',Sparkles],hcm:['API do HCM',Server],rules:['Regras do ERP',Scale],database:['Banco do ERP',Database],person:['Você',UserRound]};
 const stateNames:Record<LineState,string>={done:'Concluída',running:'Em andamento',waiting:'Aguardando você',error:'Interrompida',next:'Ainda não aconteceu',unknown:'Sem registro detalhado'};
 const outcomeNames:Record<DecisionView['outcome'],string>={branch:'Este atendimento seguiu este desvio.',main:'Este atendimento seguiu a linha principal.',unknown:'Caminho não registrado nesta execução.',unreached:'Este atendimento não chegou a esta pergunta.'};
@@ -32,7 +32,7 @@ function StopMark({stop,live}:{stop:StopView;live:boolean}){
 
 function StopDetail({stop,stage,selected,live,clock}:{stop:StopView;stage:string;selected?:Json|null;live:boolean;clock:number}){
  const meta=[...stop.spans].reverse().find(s=>s.meta?.model)?.meta||{},usage=[...stop.spans].reverse().find(s=>s.activity==='model_response')?.meta||{};
- const legacy=stop.tech.includes('model')&&!meta.model?(selected?.events||[]).filter((e:Json)=>e.type==='agent_completed'&&e.role===roles[stage]):[];
+ const legacy=stop.activities.includes('model_request')&&!meta.model?(selected?.events||[]).filter((e:Json)=>e.type==='agent_completed'&&e.role===roles[stage]):[];
  const elapsed=(s:Span)=>typeof s.meta?.duration_seconds==='number'?duration(s.meta.duration_seconds):s.state==='running'&&live?`${duration(Math.max(0,(clock-new Date(s.started_at).getTime())/1000))} decorridos`:s.state==='running'?'Último registro: em andamento':stateNames[s.state as LineState]||'';
  const empty=!selected?'Durante um atendimento, aqui aparecem horários, duração e consumo desta parada.':stop.state==='unknown'?'A etapa foi concluída antes do registro detalhado; não há horários desta parada.':stop.state==='waiting'?`Aguardando sua ação no atendimento desde ${time(stop.at)}.`:stop.state==='next'?'Esta parada ainda não aconteceu nesta execução.':`Registrado às ${time(stop.at)}.`;
  return <div id="stage-stop-detail" className={`stage-detail is-${stop.state}`}>
@@ -71,7 +71,7 @@ export default function StageExecution({step,number:stepNumber,next,stageMap,sel
   {!stage?<p className="stage-detail-empty">{stageMap===undefined?'Carregando o roteiro da etapa…':'Não foi possível carregar o roteiro desta etapa. Tente abrir de novo.'}</p>:<>
    <ol className="stage-line" aria-label={`Paradas de ${step.title}`}>{line.map((item,i)=>{
     const flow=`${item.reached?' in-on':''}${line[i+1]?.reached?' out-on':''}`;
-    if(item.type==='stop')return <li key={item.id} className={`stage-item stage-stop is-${item.state}${flow}${open===item.id?' chosen':''}`}><button type="button" aria-expanded={open===item.id} aria-controls="stage-stop-detail" onClick={()=>setOpen(open===item.id?null:item.id)}><StopMark stop={item} live={live}/><span className="stage-stop-label">{item.label}</span><span className="sr-only">Parada {item.number}: {stateNames[item.state]}</span></button></li>;
+    if(item.type==='stop')return <li key={item.id} className={`stage-item stage-stop is-${item.state}${flow}${open===item.id?' chosen':''}`}><button type="button" aria-expanded={open===item.id} aria-controls="stage-stop-detail" onClick={()=>setOpen(open===item.id?null:item.id)}><StopMark stop={item} live={live}/><span className="stage-stop-label">{item.label}{item.caption&&item.spans.some(s=>s.meta?.[item.caption!])&&<small>{item.spans.find(s=>s.meta?.[item.caption!])!.meta[item.caption]}</small>}</span><span className="sr-only">Parada {item.number}: {stateNames[item.state]}</span></button></li>;
     if(item.type==='decision')return <li key={`${item.node}-${item.to}`} className={`stage-item stage-decision is-${item.outcome}${flow}`}><span className="stage-question">{item.question}</span><span className="stage-diamond" aria-hidden="true"/><span className="stage-main-answer" aria-hidden="true">{opposite(item.answer)}</span><span className="stage-branch"><span className="stage-answer">{item.answer}</span><span className="stage-branch-chip">{item.label}<small>{item.note}</small></span></span><span className="sr-only">{selected?outcomeNames[item.outcome]:'Pergunta possível neste ponto do fluxo.'}</span></li>;
     return <li key="exit" className={`stage-item stage-exit is-${item.state}${flow}`}><span className={'stage-exit-chip'+(step.id==='validation'?' graph-end':'')}>{exit}</span></li>;
    })}</ol>

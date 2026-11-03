@@ -70,3 +70,13 @@ test('routes are not operations; stage keys group the context and choice records
  assert.equal(stageKey('intent'),'choice');
  assert.equal(stageKey('rollback'),'apply');
 });
+
+test('a model call split in steps shows the question, the form with the model, the wait and the check, while the wait runs',()=>{
+ const split={...stage('classification'),items:[stop('agent',['context_prepare']),stop('form',['model_prepare'],{caption:'model'}),stop('wait',['model_request','model_response','output_retry']),stop('answer',['model_decode','output_validate'])]};
+ const [agent,form,wait,answer]=buildStageLine(map,split,run(call.slice(0,5)));
+ assert.deepEqual([agent.state,form.state,wait.state,answer.state],['done','done','running','next']);
+ assert.equal(form.spans[0].meta.model,'gpt-6-luna');
+ const done=buildStageLine(map,split,run(call));
+ assert.deepEqual(done.slice(0,4).map(s=>[s.number,s.state]),[[1,'done'],[2,'done'],[3,'done'],[4,'done']]);
+ assert.equal(done[2].spans.find(s=>s.activity==='model_response').meta.prompt_tokens,1200);
+});

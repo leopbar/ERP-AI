@@ -288,3 +288,18 @@ def test_output_cut_by_the_token_limit_is_retried_once_with_a_higher_limit(monke
     monkeypatch.setattr(provider.httpx, "Client", lambda **kwargs: transport(transport=provider.httpx.MockTransport(respond), **kwargs))
     proposal, metrics = generate("três parcelas", base_snapshot(), [{"id": "catalog:vacations-2", "title": "Catálogo", "content": copy.deepcopy(CATALOG)}], [])
     assert limits == [4096, 8192] and proposal.changes[0].value == 3 and metrics["output_limit_raised_to"] == 8192
+
+
+def test_cost_of_a_call_includes_the_answer_cut_by_the_token_limit(monkeypatch):
+    import app.provider as provider
+    from app.model_catalog import estimate_cost
+    transport = provider.httpx.Client
+    usage = {"prompt_tokens": 1000, "completion_tokens": 2000}
+    def respond(request):
+        cut = json.loads(request.content)["max_completion_tokens"] == 4096
+        return provider.httpx.Response(200, json={"choices": [{"finish_reason": "length" if cut else "stop", "message": {"content": "{\"a\"" if cut else "{}"}}], "usage": usage})
+    monkeypatch.setattr(provider.httpx, "Client", lambda **kwargs: transport(transport=provider.httpx.MockTransport(respond), **kwargs))
+    config = {"model": "gpt-6-luna", "base_url": "https://model.example/v1", "api_key": "not-a-real-key", "max_completion_tokens": 4096}
+    _, metrics = provider.completion(config, [], {"type": "object"})
+    one = estimate_cost("gpt-6-luna", usage)["estimated_usd"]
+    assert metrics["cost"]["estimated_usd"] == round(2 * one, 8) and metrics["cost"]["cut_response_usd"] == one

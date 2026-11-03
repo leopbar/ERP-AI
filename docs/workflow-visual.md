@@ -8,8 +8,10 @@ em um atendimento, usa o estado confirmado e os registros das etapas internas.
 
 Selecionar uma etapa abre, dentro do próprio mapa e logo abaixo da fileira dela,
 uma linha de paradas numeradas, como estações de metrô. A numeração recomeça em
-cada etapa. Uma chamada de IA é uma parada só (o agente, com o mesmo desenho do
-mapa); as rotinas de consulta e execução viram paradas com ícones. O estado de
+cada etapa. Uma chamada de IA vira quatro paradas: o agente pergunta (com o mesmo
+desenho do mapa), o formulário da chamada (com o nome do modelo), aguardando o
+modelo e a conferência da resposta; as rotinas de consulta e execução viram
+paradas com ícones. O estado de
 cada parada vem do registro mais recente: concluída, em andamento, aguardando
 você, interrompida ou ainda não aconteceu. Em telas estreitas, a linha fica
 vertical.
@@ -111,6 +113,7 @@ as operações registradas. Um caminho novo no grafo sem pergunta no mapa faz o
 teste falhar. Todos os testes de execução usam HCM simulado.
 
 `node --test tests/stageTrace.test.mjs`, no frontend, verifica uma chamada de IA
-como parada única, o desvio seguido e o restante da linha não alcançado,
+como parada única e dividida em pergunta, formulário, espera e conferência, o
+desvio seguido e o restante da linha não alcançado,
 execuções antigas sem caminho inventado, a decisão humana que encerra a pausa e
 a falha registrada só no nível da etapa.

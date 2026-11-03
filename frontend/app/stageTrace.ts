@@ -5,7 +5,7 @@ export type Span = {id:string;step:string;state:string;activity?:string;started_
 export type CaseEvent = {type:string;at:string;[key:string]:any};
 
 // Published by GET /api/workflow/map (backend/app/workflow_map.py).
-export type MapStop = {type:'stop';id:string;label:string;icon:string;tech:string[];node?:string|null;activities:string[];steps:string[];case_events:string[];optional:boolean};
+export type MapStop = {type:'stop';id:string;label:string;icon:string;tech:string[];node?:string|null;activities:string[];steps:string[];case_events:string[];optional:boolean;caption?:string|null};
 export type MapDecision = {type:'decision';node:string;question:string;answer:string;to:string;label:string;note:string;internal:boolean};
 export type MapStage = {id:string;nodes:string[];exit?:string;items:(MapStop|MapDecision)[]};
 export type StageMap = {stages:MapStage[];main:Record<string,string>;detours:Record<string,{label:string;routes:Record<string,string>}>};

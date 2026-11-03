@@ -8,8 +8,6 @@ Labels describe the ERP's own flow: no HR rule, prompt or business data lives he
 """
 from langgraph.graph import END
 
-MODEL_CALL = ["context_prepare", "model_prepare", "model_request", "model_response", "model_decode", "output_validate", "output_retry"]
-
 # Where the line continues after each node.
 MAIN = {"guard_input": "classify", "classify": "preview", "preview": "context", "context": "alternatives", "context_expert": "plan",
         "alternatives": "choice", "choice": "remember", "remember": "plan", "plan": END}
@@ -21,9 +19,18 @@ DETOURS = {
 }
 
 
-def stop(id, label, icon, tech, node=None, activities=(), steps=(), case_events=(), optional=False):
+def stop(id, label, icon, tech, node=None, activities=(), steps=(), case_events=(), optional=False, caption=None):
+    """caption: a recorded value shown under the label, such as "model" for the model the call used."""
     return {"type": "stop", "id": id, "label": label, "icon": icon, "tech": list(tech), "node": node, "activities": list(activities),
-            "steps": list(steps), "case_events": list(case_events), "optional": optional}
+            "steps": list(steps), "case_events": list(case_events), "optional": optional, "caption": caption}
+
+
+def model_call(node, agent, icon):
+    """One model call followed step by step: the agent's question, the form sent, the wait and the check of the answer."""
+    return [stop("agent", agent + " pergunta", icon, ["rules"], node, ["context_prepare"]),
+            stop("form", "Formulário da chamada", "request", ["model"], node, ["model_prepare"], caption="model"),
+            stop("wait", "Aguardando o modelo", "waiting", ["model"], node, ["model_request", "model_response", "output_retry"]),
+            stop("answer", "Conferência da resposta", "check", ["rules"], node, ["model_decode", "output_validate"])]
 
 
 def decision(node, question, answer, to, label, note, internal=False):
@@ -41,7 +48,7 @@ STAGES = [
         decision("guard_input", "Fora do escopo?", "sim", END, "Fim do atendimento", "pedido recusado")]},
     {"id": "classification", "nodes": ["classify"], "exit": "classify", "items": [
         stop("modules", "Módulos do HCM", "modules", ["hcm"], "classify", ["modules_read"], optional=True),
-        stop("agent", "Agente classificador", "agent:classifier", ["model"], "classify", MODEL_CALL),
+        *model_call("classify", "Agente classificador", "agent:classifier"),
         decision("classify", "Fora do escopo?", "sim", END, "Fim do atendimento", "pedido recusado"),
         decision("classify", "Retomada do consultor?", "sim", "context_expert", "Contexto atualizado", "e segue direto ao plano")]},
     {"id": "context", "nodes": ["preview", "clarify", "context", "context_expert"], "exit": "context", "items": [
@@ -52,7 +59,7 @@ STAGES = [
         stop("knowledge", "Conhecimento", "knowledge", ["database"], "context", ["knowledge_retrieve"]),
         decision("context", "Conector disponível?", "não", "consultant", "Consultor", "sem conector no HCM")]},
     {"id": "interpretations", "nodes": ["alternatives"], "exit": "alternatives", "items": [
-        stop("agent", "Agente intérprete", "agent:interpreter", ["model"], "alternatives", MODEL_CALL),
+        *model_call("alternatives", "Agente intérprete", "agent:interpreter"),
         stop("options", "Sugestão por item", "options", ["rules"], "alternatives", ["alternatives_organize", "routing"]),
         decision("alternatives", "Falta outro módulo?", "sim", "context", "Volta ao Contexto HCM", "com o módulo que faltava"),
         decision("alternatives", "Algum item possível?", "não", "consultant", "Consultor", "nada é possível no HCM")]},
@@ -63,7 +70,7 @@ STAGES = [
         stop("intent", "Intenção registrada", "intent", ["database"], "remember", ["intent_confirm"], steps=["intent"]),
         decision("remember", "Algo a configurar?", "não", "consultant", "Consultor", "nada configurável no HCM")]},
     {"id": "configuration", "nodes": ["plan"], "items": [
-        stop("agent", "Agente configurador", "agent:configurator", ["model"], "plan", MODEL_CALL)]},
+        *model_call("plan", "Agente configurador", "agent:configurator")]},
     {"id": "validation", "nodes": ["plan"], "exit": "plan", "items": [
         stop("sources", "Fontes do plano", "sources", ["rules"], "plan", ["sources_validate"]),
         stop("coverage", "Itens do pedido", "options", ["rules"], "plan", ["coverage_validate"]),

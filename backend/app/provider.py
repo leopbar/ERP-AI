@@ -131,7 +131,7 @@ def completion(config, messages, schema, *, name="vacation_proposal", token_limi
     with twice the limit, so a case with several catalogs does not fail on the configured default."""
     start = time.monotonic()
     limit = token_limit or config.get("max_completion_tokens", 4096)
-    retried = False
+    retried, cut_usd = False, 0.0
     try:
         while True:
             stage = progress.current_step()
@@ -161,6 +161,7 @@ def completion(config, messages, schema, *, name="vacation_proposal", token_limi
                               **({"estimated_usd": cost["estimated_usd"]} if cost else {}))
             if response.status_code < 400 and response.json()["choices"][0].get("finish_reason") == "length" and not retried and limit < MAX_OUTPUT_TOKENS:
                 limit, retried = min(limit * 2, MAX_OUTPUT_TOKENS), True
+                cut_usd += cost["estimated_usd"] if cost else 0.0  # the cut answer is billed too
                 progress.emit(stage, "done", activity="output_retry", model=config["model"], max_completion_tokens=limit)
                 continue
             break
@@ -181,10 +182,13 @@ def completion(config, messages, schema, *, name="vacation_proposal", token_limi
             if choice.get("finish_reason") != "stop":
                 raise HTTPException(502, "A resposta do modelo ficou incompleta. Revise o limite de saída ou simplifique o atendimento.")
             content = json.loads(choice["message"]["content"])
+        cost = estimate_cost(config["model"], body.get("usage", {}))
+        if cost and cut_usd:
+            cost = {**cost, "estimated_usd": round(cost["estimated_usd"] + cut_usd, 8), "cut_response_usd": round(cut_usd, 8)}
         return content, {"mode": "model", "model": config["model"], "provider": "OpenAI" if config["base_url"] == "https://api.openai.com/v1" else "compatible",
                          **({"output_limit_raised_to": limit} if retried else {}),
                          "prompt_version": prompt_version or PROMPT_VERSION, "schema_sha256": hashlib.sha256(json.dumps(schema, sort_keys=True).encode()).hexdigest(),
-                         "duration_seconds": round(time.monotonic() - start, 3), "usage": body.get("usage", {}), "cost": estimate_cost(config["model"], body.get("usage", {}))}
+                         "duration_seconds": round(time.monotonic() - start, 3), "usage": body.get("usage", {}), "cost": cost}
     except httpx.TimeoutException as exc:
         raise HTTPException(504, "O modelo demorou além do limite. Nenhuma configuração do HCM foi alterada.") from exc
     except httpx.HTTPError as exc:
